@@ -1,0 +1,29 @@
+name: CI
+
+# Se ejecuta en cada push a main y en cada pull request contra main.
+# En la protección de rama, marca "quality" como required status check para
+# que ningún PR se pueda fusionar con el lint o los tests en rojo.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar herramientas de calidad
+        run: pip install -r requirements-dev.txt
+
+      - name: Lint (flake8)
+        run: flake8 src tests
+
+      - name: Tests (pytest)
+        run: pytest

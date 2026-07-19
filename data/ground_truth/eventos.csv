@@ -1,0 +1,3 @@
+evento_id,code,equipo,nombre,modo_falla,fecha_onset,fecha_falla,fuente
+PRE-2026-05-31,PRE,10004545,Prensa de succion,Desgaste de rodamiento,2026-04-26,2026-05-31,historian
+AG4-2026-07-15,AG4,10004524,Agitador tina 4,Desgaste de rodamiento,2026-06-15,2026-07-15,historian

@@ -1,0 +1,3 @@
+aviso,tipo_aviso,orden,tipo_orden,ubicacion_tecnica,equipo,fecha_aviso,texto,horas,repuesto
+11225144,M2,43702971,PM01,PLBQ-TIS1-PRENSA-SUCC,10004545,2026-05-31 09:00,"ruido y vibracion en Prensa de succion, revisar urgente",12.3,rodamiento SKF 22320
+13585969,M2,48900364,PM01,PLBQ-TIS1-PREP-AGIT04,10004524,2026-07-15 15:00,se escucha golpeteo en Agitador tina 4 lado acople,4.0,rodamiento SKF 22320

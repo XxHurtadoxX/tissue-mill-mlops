@@ -1,0 +1,3 @@
+# Herramientas de calidad que corre la CI en cada pull request.
+flake8==7.1.1
+pytest==8.3.4

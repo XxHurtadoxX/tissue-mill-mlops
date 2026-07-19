@@ -1,0 +1,47 @@
+name: Extracto diario de planta
+
+# Simula la operación real: la planta genera datos todos los días. Este cron
+# genera el "extracto del historian" del día (en UTC) y lo commitea al repo,
+# igual que un job de ingesta que corre cada madrugada.
+#
+# Notas de realismo/GitHub:
+#   * El cron usa hora UTC y puede retrasarse unos minutos en horas pico.
+#   * GitHub suspende los cron si el repo no tiene actividad en 60 días; basta
+#     con volver a habilitarlos desde la pestaña Actions.
+on:
+  schedule:
+    - cron: "0 6 * * *"   # 06:00 UTC todos los días
+  workflow_dispatch:       # permite dispararlo a mano desde la pestaña Actions
+
+# El job necesita permiso de escritura para poder commitear los datos nuevos.
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-data
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Generar el extracto de hoy (UTC)
+        run: python -m src.simulator.generate --date "$(date -u +%F)"
+
+      - name: Commit y push si hay datos nuevos
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "Sin datos nuevos para commitear."
+          else
+            git commit -m "data: extracto de planta $(date -u +%F)"
+            git push
+          fi

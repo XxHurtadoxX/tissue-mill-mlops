@@ -1,0 +1,4 @@
+# Normaliza todos los archivos de texto a LF dentro del repositorio.
+# Evita diffs ruidosos de CRLF entre el desarrollo en Windows y los commits
+# que el cron de GitHub Actions hace desde Linux.
+* text=auto eol=lf
