@@ -1,4 +1,5 @@
-# Runtime del simulador (Fase 0): SOLO librería estándar de Python.
-# Mantenerlo sin dependencias hace que el cron diario y la CI sean rápidos y
-# reproducibles. Las dependencias de ML (mlflow, azure-ai-ml, scikit-learn,
-# pandas) entran en fases posteriores, en su propio requirements.
+# Dependencias de la construcción del dataset y, más adelante, del entrenamiento.
+# El simulador (src/simulator) sigue funcionando solo con la librería estándar,
+# así que el workflow que genera datos a diario no necesita instalar nada.
+pandas==2.2.3
+numpy==2.1.3

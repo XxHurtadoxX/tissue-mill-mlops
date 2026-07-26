@@ -16,3 +16,9 @@ Thumbs.db
 # NOTA: la carpeta data/ SÍ se versiona a propósito. El proyecto simula una
 # planta que genera datos a diario, y el cron los commitea al repo. No la
 # ignores: es parte de la historia del proyecto.
+
+# El backfill histórico (2024 en adelante) ocupa unos 41 MB y multiplicaría por
+# catorce el tamaño del repositorio sin aportar nada nuevo: el simulador es
+# determinista, así que se reconstruye idéntico con un solo comando.
+#   python -m src.simulator.generate --from 2024-01-01 --to <hoy> --out data-backfill
+data-backfill/
