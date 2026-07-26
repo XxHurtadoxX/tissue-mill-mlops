@@ -1,4 +1,5 @@
-evento_id,code,equipo,nombre,modo_falla,fecha_onset,fecha_falla,fuente
-PRE-2026-05-31,PRE,10004545,Prensa de succion,Desgaste de rodamiento,2026-04-26,2026-05-31,historian
-AG4-2026-07-15,AG4,10004524,Agitador tina 4,Desgaste de rodamiento,2026-06-15,2026-07-15,historian
-AG1-2026-07-23,AG1,10004521,Agitador tina 1,Desgaste de rodamiento,2026-06-23,2026-07-23,historian
+evento_id,code,equipo,nombre,modo_falla,fecha_onset,fecha_falla,fuente,silenciosa
+BV2-2026-06-02,BV2,10004532,Bomba de vacio 2,Desgaste de rodamiento,2026-05-08,2026-06-02,historian,0
+RED1-2026-06-26,RED1,10004560,Reductor bobinadora,Desgaste de rodamiento,2026-05-06,2026-06-26,historian,0
+AG2-2026-07-06,AG2,10004522,Agitador tina 2,Desgaste de rodamiento,2026-05-24,2026-07-06,historian,0
+BV2-2026-07-10,BV2,10004532,Bomba de vacio 2,Desgaste de rodamiento,2026-06-12,2026-07-10,historian,1

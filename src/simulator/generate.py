@@ -95,17 +95,48 @@ def _append_csv(path: str, header: list[str], rows: list[list],
 # --------------------------------------------------------------------------- #
 def signal_value(eq: plant_mod.Equipment, sig: plant_mod.Signal,
                  ts: datetime, fail: plant_mod.Failure | None,
-                 seed: int) -> float:
-    """Valor de una señal en un instante: base + ciclo diario + ruido + falla."""
+                 seed: int, faults: list[plant_mod.SensorFault] | None = None) -> float:
+    """Valor de una señal en un instante.
+
+    Compone cinco efectos: el valor base con su ciclo diario de carga, la deriva
+    del punto de operación de ese día, el factor de carga de la planta, el ruido
+    de medición y, si corresponde, la degradación por falla o por sensor
+    descalibrado.
+    """
+    day = ts.date()
     hour = ts.hour + ts.minute / 60.0
     day_cycle = math.sin((hour - 6.0) / 24.0 * 2.0 * math.pi)
     value = sig.base + sig.day_amp * day_cycle
+
+    # Deriva del punto de operación de ese día. No se promedia al agregar las
+    # lecturas a nivel diario, así que es la que marca cuán difícil resulta
+    # distinguir una degradación incipiente del funcionamiento normal.
+    drift_frac = plant_mod.DAILY_DRIFT.get(sig.kind, 0.0)
+    if drift_frac:
+        rd = plant_mod.rng_for(seed, "daydrift", eq.code, sig.loop, day.isoformat())
+        value *= (1.0 + rd.gauss(0.0, drift_frac))
+
+    # La carga de la planta mueve sobre todo corriente y vibración.
+    if sig.kind in ("current", "vibration"):
+        value *= plant_mod.load_factor(day, seed)
+
     r = plant_mod.rng_for(seed, "noise", eq.code, sig.loop, ts.isoformat())
     value += r.gauss(0.0, sig.noise)
-    if fail is not None:
-        p = plant_mod.progress(fail, ts.date())
+
+    # Degradación real, salvo que la falla sea silenciosa.
+    if fail is not None and not fail.silent:
+        p = plant_mod.progress(fail, day)
         if p is not None:
             value *= (1.0 + sig.gain * p * p)
+
+    # Sensor descalibrado: imita una degradación sin que el equipo esté enfermo.
+    for sf in faults or ():
+        if sf.loop != sig.loop:
+            continue
+        p = plant_mod.sensor_fault_progress(sf, day)
+        if p is not None:
+            sign = 1.0 if sig.gain >= 0 else -1.0
+            value *= (1.0 + sign * sf.drift * p * p)
     return value
 
 
@@ -136,11 +167,12 @@ def historian_rows(day: date, plant, scheds: dict, seed: int,
             continue  # equipo en reparación -> hueco en el historian
         fail = plant_mod.active_failure(sched, day)
         for sig in eq.signals:
+            faults = plant_mod.sensor_fault_schedule(eq, sig, seed, day)
             series, keep = [], []
             for ts in slots:
                 if ts.hour in stop_hours:
                     continue  # parada programada de la máquina -> hueco
-                series.append(signal_value(eq, sig, ts, fail, seed))
+                series.append(signal_value(eq, sig, ts, fail, seed, faults))
                 keep.append(ts)
             day_iso = day.isoformat()
             corrupted = dirty_mod.corrupt_series(series, seed, eq.tag(sig),
@@ -218,7 +250,7 @@ def route_rows(day: date, plant, scheds: dict, seed: int) -> list[list]:
         vib = next(s for s in eq.signals if s.kind == "vibration")
         fail = plant_mod.active_failure(scheds[eq.code], day)
         rms = vib.base
-        if fail is not None:
+        if fail is not None and not fail.silent:
             p = plant_mod.progress(fail, day) or 0.0
             rms *= (1.0 + vib.gain * p * p)
         r = plant_mod.rng_for(seed, "route", eq.code, day.isoformat())
@@ -283,7 +315,7 @@ def order_and_truth_rows(day: date, plant, scheds: dict, seed: int):
                        horas, _REPUESTO[f.kind]])
         truth.append([f"{eq.code}-{f.fail.isoformat()}", eq.code, eq.eq_id,
                       eq.name, f.kind, f.onset.isoformat(), f.fail.isoformat(),
-                      "historian"])
+                      "historian", int(f.silent)])
     # Eventos de taller de rotor (proyecto P2)
     for code in PULPERS:
         for _, shop in _rotor_cycles(code, seed, day):
@@ -299,7 +331,7 @@ def order_and_truth_rows(day: date, plant, scheds: dict, seed: int):
                 truth.append([f"{code}-rotor-{shop.isoformat()}", code, eq.eq_id,
                               eq.name, "Desgaste de rotor de pulper",
                               (shop - timedelta(days=60)).isoformat(),
-                              shop.isoformat(), "batches"])
+                              shop.isoformat(), "batches", 0])
     return orders, truth
 
 
@@ -317,7 +349,7 @@ ROUTE_HEADER = ["fecha", "punto", "rms_mm_s", "gE", "zona_iso"]
 ORDER_HEADER = ["aviso", "tipo_aviso", "orden", "tipo_orden", "ubicacion_tecnica",
                 "equipo", "fecha_aviso", "texto", "horas", "repuesto"]
 TRUTH_HEADER = ["evento_id", "code", "equipo", "nombre", "modo_falla",
-                "fecha_onset", "fecha_falla", "fuente"]
+                "fecha_onset", "fecha_falla", "fuente", "silenciosa"]
 
 
 def generate_day(day: date, out: str, seed: int, sample_min: int,

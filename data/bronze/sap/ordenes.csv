@@ -1,4 +1,5 @@
 aviso,tipo_aviso,orden,tipo_orden,ubicacion_tecnica,equipo,fecha_aviso,texto,horas,repuesto
-11225144,M2,43702971,PM01,PLBQ-TIS1-PRENSA-SUCC,10004545,2026-05-31 09:00,"ruido y vibracion en Prensa de succion, revisar urgente",12.3,rodamiento SKF 22320
-13585969,M2,48900364,PM01,PLBQ-TIS1-PREP-AGIT04,10004524,2026-07-15 15:00,se escucha golpeteo en Agitador tina 4 lado acople,4.0,rodamiento SKF 22320
-11917935,M2,47536619,PM01,PLBQ-TIS1-PREP-AGIT01,10004521,2026-07-23 12:00,"ruido y vibracion en Agitador tina 1, revisar urgente",11.3,rodamiento SKF 22320
+14495850,M2,40922513,PM01,PLBQ-TIS1-VACIO-BOMB02,10004532,2026-06-02 03:00,BV2 vibra raro se calienta el rodamiento,8.3,rodamiento SKF 22320
+18932028,M2,46206828,PM01,PLBQ-TIS1-CONV-BOBIN-RED,10004560,2026-06-26 13:00,RED1 vibra raro se calienta el rodamiento,7.3,rodamiento SKF 22320
+17937418,M2,41479394,PM01,PLBQ-TIS1-PREP-AGIT02,10004522,2026-07-06 05:00,AG2 vibra raro se calienta el rodamiento,9.6,rodamiento SKF 22320
+14615679,M2,43350203,PM01,PLBQ-TIS1-VACIO-BOMB02,10004532,2026-07-10 05:00,"ruido y vibracion en Bomba de vacio 2, revisar urgente",14.0,rodamiento SKF 22320

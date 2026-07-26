@@ -19,6 +19,7 @@ Convención de tags (ISA-5.1), heredada del caso papelera::
 from __future__ import annotations
 
 import hashlib
+import math
 import random
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -38,14 +39,41 @@ SIGNAL_CODE = {
 
 # Cuánto mueve una falla activa a cada tipo de señal (ganancia relativa en p=1).
 # Positiva = sube (vibración, temperatura, corriente); negativa = cae (el vacío
-# de una bomba desgastada baja). Hace la firma de falla MULTIVARIADA y realista.
+# de una bomba desgastada baja). Hace la firma de falla MULTIVARIADA.
+#
+# Las ganancias son deliberadamente modestas. Una versión anterior usaba valores
+# varias veces mayores y producía un problema trivial: una sola variable
+# separaba las clases con AUC de 0.997, cuando en mantenimiento predictivo real
+# un modelo bueno se mueve entre 0.75 y 0.90. La dificultad del problema es
+# parte de lo que se está simulando.
 FAIL_GAIN = {
-    "vibration": 2.6,
-    "temp": 0.55,
-    "current": 0.12,
-    "vacuum": -0.18,
-    "pressure": -0.12,
+    "vibration": 0.50,
+    "temp": 0.16,
+    "current": 0.05,
+    "vacuum": -0.07,
+    "pressure": -0.05,
 }
+
+# Deriva diaria del punto de operación, como fracción del valor base.
+#
+# Es el parámetro que más condiciona la detectabilidad, y el que faltaba en la
+# primera versión. El ruido dentro del día se promedia al agregar las lecturas
+# a nivel diario, así que no dificulta nada; lo que de verdad confunde a un
+# modelo es que el punto de operación cambie de un día a otro por causas
+# legítimas: mezcla de materia prima, temperatura ambiente, ajustes de turno.
+DAILY_DRIFT = {
+    "vibration": 0.16,
+    "temp": 0.055,
+    "current": 0.045,
+    "vacuum": 0.05,
+    "pressure": 0.04,
+}
+
+# Fracción de fallas que ocurren sin precursor detectable en los sensores.
+# En una planta real no todo se anuncia: un rodamiento puede romperse por un
+# golpe, un impulsor puede fracturarse de repente. Estas fallas ponen un techo
+# natural al desempeño de cualquier modelo, y omitirlas sería hacer trampa.
+SILENT_FAILURE_RATE = 0.25
 
 
 @dataclass(frozen=True)
@@ -94,6 +122,23 @@ class Failure:
     onset: date        # inicio real de la degradación
     fail: date         # fecha de la falla dura (para/orden de trabajo)
     kind: str          # descripción legible del modo de falla
+    silent: bool = False  # si es True no deja rastro en los sensores
+
+
+@dataclass(frozen=True)
+class SensorFault:
+    """Un sensor que se descalibra y deriva sin que el equipo esté enfermo.
+
+    Genera falsos positivos legítimos: la señal sube como si hubiera desgaste,
+    pero la inspección no encuentra nada porque el problema está en la
+    instrumentación. Es exactamente el caso que documenta el caso de negocio.
+    """
+
+    code: str
+    loop: str          # lazo del instrumento afectado
+    start: date
+    end: date
+    drift: float       # deriva relativa al final del episodio
 
 
 def _seed_int(seed: int, *parts: object) -> int:
@@ -272,9 +317,58 @@ def failure_schedule(eq: Equipment, seed: int, horizon: date) -> list[Failure]:
         t = t + timedelta(days=gap)
         if t > limit:
             break
-        onset = t - timedelta(days=eq.onset_days)
-        out.append(Failure(eq.code, onset, t, _fail_kind(eq)))
+        # La duración del onset varía entre eventos: no todas las degradaciones
+        # avanzan al mismo ritmo, y asumir lo contrario facilitaría el problema.
+        onset_days = max(10.0, rng.gauss(eq.onset_days, eq.onset_days * 0.25))
+        onset = t - timedelta(days=onset_days)
+        silent = rng.random() < SILENT_FAILURE_RATE
+        out.append(Failure(eq.code, onset, t, _fail_kind(eq), silent))
     return out
+
+
+def sensor_fault_schedule(eq: Equipment, sig: Signal, seed: int,
+                          horizon: date) -> list[SensorFault]:
+    """Episodios de descalibración de un instrumento, sin falla del equipo."""
+    rng = rng_for(seed, "sensorfault", eq.code, sig.loop)
+    out: list[SensorFault] = []
+    t = PLANT_EPOCH
+    limit = horizon + timedelta(days=30)
+    while True:
+        t = t + timedelta(days=max(120.0, rng.expovariate(1.0 / 620.0)))
+        if t > limit:
+            break
+        end = t + timedelta(days=rng.randint(12, 40))
+        # La deriva es del mismo orden que una degradación real: si fuera menor,
+        # el modelo la distinguiría sin esfuerzo y no serviría de confusor.
+        drift = abs(FAIL_GAIN.get(sig.kind, 0.1)) * rng.uniform(0.5, 1.1)
+        out.append(SensorFault(eq.code, sig.loop, t, end, drift))
+        t = end
+    return out
+
+
+def sensor_fault_progress(f: SensorFault, day: date) -> float | None:
+    """Avance del episodio de descalibración en [0, 1], o None si no aplica."""
+    if day < f.start or day > f.end:
+        return None
+    span = (f.end - f.start).days or 1
+    return (day - f.start).days / span
+
+
+def load_factor(day: date, seed: int) -> float:
+    """Factor de carga de la planta para ese día, alrededor de 1.
+
+    Recoge las variaciones legítimas de operación (mezcla de materia prima,
+    demanda, ajustes de turno) que mueven corriente y vibración sin que haya
+    ningún equipo enfermo. Varía de forma suave a lo largo de varios días, que
+    es justo lo que puede confundirse con el inicio de una degradación.
+    """
+    t = (day - PLANT_EPOCH).days
+    rng = rng_for(seed, "loadphase")
+    total = 0.0
+    for period in (13.0, 37.0, 89.0):
+        phase = rng.random() * 2.0 * math.pi
+        total += math.sin(2.0 * math.pi * t / period + phase)
+    return 1.0 + 0.045 * total
 
 
 def progress(f: Failure, day: date) -> float | None:

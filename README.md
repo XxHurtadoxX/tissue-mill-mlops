@@ -31,6 +31,8 @@ Antes de llegar al modelo, el proyecto resuelve un problema previo: generar dato
 
 La generación es determinista: dado el mismo `--seed`, se reproduce exactamente la misma historia de planta. El tiempo entre fallas sigue una distribución Weibull, apropiada para modelar desgaste mecánico, a diferencia de la exponencial (que asume fallas puramente aleatorias y es el supuesto por defecto en simuladores más simples).
 
+El simulador también está calibrado para que el problema conserve su dificultad. Una de cada cuatro fallas ocurre sin dejar rastro en los sensores, el punto de operación de cada equipo deriva de un día a otro por causas legítimas, y algunos instrumentos se descalibran e imitan una degradación que no existe. Con estos mecanismos la mejor variable individual alcanza AUC de 0.81, un rango creíble para mantenimiento predictivo. El razonamiento completo está en el [diccionario de datos](docs/diccionario-datos.md).
+
 ## Datos que llegan a diario
 
 Una planta real genera datos todos los días, así que el repositorio también lo hace. El workflow [`daily-data.yml`](.github/workflows/daily-data.yml) corre cada día a las 06:00 UTC, genera el extracto del historian correspondiente a esa fecha y lo commitea automáticamente, igual que correría un job de ingesta nocturno en producción. El dataset queda actualizado sin intervención manual.
@@ -46,14 +48,20 @@ pip install -r requirements-dev.txt      # el simulador no requiere dependencias
 # 2. Generar datos
 python -m src.simulator.generate --date 2026-07-19      # un solo día
 python -m src.simulator.generate --days 60              # los últimos 60 días
-python -m src.simulator.generate --from 2024-01-01 --to 2025-12-31   # backfill histórico
 
-# 3. Correr calidad (lo mismo que la CI)
+# Backfill histórico. Ocupa unos 41 MB y no se versiona, porque el simulador
+# es determinista y lo reconstruye idéntico cuando haga falta.
+python -m src.simulator.generate --from 2024-01-01 --to 2026-07-26 --out data-backfill
+
+# 3. Construir la tabla de entrenamiento
+python -m src.features.build_dataset --data data-backfill --out data-backfill/gold
+
+# 4. Correr calidad (lo mismo que la CI)
 flake8 src tests
 pytest
 ```
 
-Los datos caen bajo `data/` en el patrón **bronze** (crudo, tal cual llega). Las capas silver (limpio) y gold (features) llegan en la Fase 1.
+Los datos crudos caen bajo `data/` siguiendo el patrón **bronze**. El constructor del dataset aplica la limpieza (silver) y produce la tabla de entrenamiento (gold), con una fila por equipo y por día.
 
 ## Estructura del repositorio
 
@@ -63,7 +71,10 @@ tissue-mill-mlops/
 │   ├── plant.py        # modelo físico: equipos, tags, cronograma de fallas (Weibull)
 │   ├── dirty.py        # inyección de suciedad (-9999, sensores congelados)
 │   └── generate.py     # generador + CLI (por día / rango / backfill)
-├── tests/              # determinismo, esquema, gramática de tags, deriva de falla
+├── src/features/
+│   ├── clean.py        # bronze a silver: descarta lecturas BAD y flatlines
+│   └── build_dataset.py # capa gold: ventanas móviles, contexto y etiquetas
+├── tests/              # determinismo, esquemas, tags y guardas anti-fuga
 ├── data/               # datos versionados (bronze) + ground_truth
 ├── docs/
 │   ├── caso-negocio.md      # el "antes/después", el valor en pesos

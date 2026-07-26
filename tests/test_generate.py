@@ -52,12 +52,12 @@ def test_dirty_mode_injects_bad_values():
 
 
 def test_failure_drives_vibration_up():
-    """Durante el final de una ventana de falla, la vibración supera su base."""
+    """Al final de una degradación no silenciosa la vibración supera su base."""
     eq = next(e for e in plant.build_plant() if e.code == "BV2")
     sched = plant.failure_schedule(eq, SEED, date(2027, 1, 1))
-    f = sched[0]
+    f = next(x for x in sched if not x.silent)
     vib = next(s for s in eq.signals if s.kind == "vibration")
-    late = f.fail - timedelta(days=2)     # casi al final de la degradación
+    late = f.fail - timedelta(days=2)       # casi al final de la degradación
     healthy = f.onset - timedelta(days=40)  # bastante antes del onset
 
     def mean_vib(day):
@@ -69,7 +69,19 @@ def test_failure_drives_vibration_up():
                         plant.active_failure(sched, day), SEED))
         return statistics.mean(vals)
 
-    assert mean_vib(late) > mean_vib(healthy) * 1.5
+    assert mean_vib(late) > mean_vib(healthy) * 1.2
+
+
+def test_silent_failure_leaves_no_trace():
+    """Una falla silenciosa no altera la señal: es el techo del modelo."""
+    eq = next(e for e in plant.build_plant() if e.code == "BV2")
+    vib = next(s for s in eq.signals if s.kind == "vibration")
+    silent = plant.Failure("BV2", date(2026, 1, 1), date(2026, 2, 1), "test", True)
+    ruidosa = plant.Failure("BV2", date(2026, 1, 1), date(2026, 2, 1), "test", False)
+    import datetime as dt
+    ts = dt.datetime(2026, 1, 30, 12)
+    assert (generate.signal_value(eq, vib, ts, silent, SEED)
+            < generate.signal_value(eq, vib, ts, ruidosa, SEED))
 
 
 def test_rotor_wear_increases_kwh_per_kg():
