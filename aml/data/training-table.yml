@@ -1,0 +1,22 @@
+$schema: https://azuremlschemas.azureedge.net/latest/data.schema.json
+
+name: tissue-training-table
+version: 1
+type: mltable
+
+description: >
+  Tabla de entrenamiento con una fila por equipo y por día. Incluye ventanas
+  móviles de las señales, contexto de mantenimiento y la etiqueta falla_14d,
+  que indica si el equipo tiene una orden correctiva en los próximos 14 días.
+  Alrededor del 5% de las filas son positivas.
+
+tags:
+  capa: gold
+  etiqueta: falla_14d
+  horizonte_dias: "14"
+
+# mltable es el único tipo que aceptan los trabajos de AutoML, porque necesitan
+# el esquema junto a los datos. La carpeta debe contener el CSV y su descriptor
+# MLTable, ambos generados por:
+#   python -m src.features.build_dataset --data data-backfill --out data-backfill/gold
+path: ../../data-backfill/gold

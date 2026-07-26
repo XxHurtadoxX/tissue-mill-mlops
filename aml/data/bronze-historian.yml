@@ -1,0 +1,20 @@
+$schema: https://azuremlschemas.azureedge.net/latest/data.schema.json
+
+name: tissue-historian-bronze
+version: 1
+type: uri_folder
+
+description: >
+  Extractos diarios crudos del historian de la planta, un CSV por día, tal como
+  llegan del sistema de control. Incluye las lecturas marcadas como BAD y los
+  tramos de sensor congelado: la limpieza es responsabilidad del pipeline, no
+  de la capa bronze.
+
+tags:
+  capa: bronze
+  fuente: historian
+
+# uri_folder porque es un directorio completo de archivos que se recorre entero.
+# Requiere haber generado antes el backfill histórico:
+#   python -m src.simulator.generate --from 2024-01-01 --to <hoy> --out data-backfill
+path: ../../data-backfill/bronze/historian

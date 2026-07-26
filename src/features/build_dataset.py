@@ -326,6 +326,33 @@ def build_dataset(data_dir: str) -> pd.DataFrame:
     return base[ordered + rest].sort_values(["fecha", "equipo_code"]).reset_index(drop=True)
 
 
+MLTABLE_TEMPLATE = """\
+$schema: https://azuremlschemas.azureedge.net/latest/MLTable.schema.json
+type: mltable
+
+# Descriptor que acompaña al CSV. Azure Machine Learning solo acepta datos
+# tabulares en formato MLTable para los trabajos de AutoML, porque necesita el
+# esquema y las instrucciones de lectura junto a los datos.
+paths:
+  - file: ./training_table.csv
+
+transformations:
+  - read_delimited:
+      delimiter: ','
+      encoding: utf8
+      empty_as_string: false
+      header: all_files_same_headers
+"""
+
+
+def write_mltable(out_dir: str) -> str:
+    """Escribe el descriptor MLTable junto a la tabla de entrenamiento."""
+    destino = os.path.join(out_dir, "MLTable")
+    with open(destino, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(MLTABLE_TEMPLATE)
+    return destino
+
+
 def _parse_date(value: str) -> date:
     return datetime.strptime(value, "%Y-%m-%d").date()
 
@@ -349,6 +376,7 @@ def main(argv: list[str] | None = None) -> int:
     os.makedirs(args.out, exist_ok=True)
     destino = os.path.join(args.out, "training_table.csv")
     df.to_csv(destino, index=False)
+    write_mltable(args.out)
 
     positivos = int(df["falla_14d"].sum())
     total = len(df)
@@ -357,6 +385,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Positivos: {positivos} ({100.0 * positivos / total:.2f}%)  ·  "
           f"columnas: {len(df.columns)}")
     print(f"Escrito en: {os.path.abspath(destino)}")
+    print("Descriptor MLTable generado junto al CSV.")
     return 0
 
 

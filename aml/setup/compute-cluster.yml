@@ -1,0 +1,21 @@
+$schema: https://azuremlschemas.azureedge.net/latest/amlCompute.schema.json
+
+name: cpu-cluster
+type: amlcompute
+size: Standard_DS11_v2
+
+# min_instances en 0 es la decisión de costo más importante del proyecto: el
+# clúster libera todos los nodos cuando no hay trabajos en cola, así que existir
+# no cuesta nada y solo se paga el tiempo de cómputo efectivo.
+min_instances: 0
+max_instances: 2
+
+# Dos minutos de inactividad antes de liberar los nodos. Un valor alto ahorra
+# tiempo de arranque entre trabajos seguidos, pero se paga esa espera.
+idle_time_before_scale_down: 120
+
+# Alternativa para recortar costo: tier low_priority aprovecha capacidad
+# sobrante de Azure con un descuento grande, a cambio de que un trabajo pueda
+# ser interrumpido y reencolado. Conviene para entrenamientos por lotes que
+# toleran interrupciones, no para cargas que deban terminar a una hora fija.
+tier: dedicated

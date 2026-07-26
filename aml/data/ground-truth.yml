@@ -1,0 +1,18 @@
+$schema: https://azuremlschemas.azureedge.net/latest/data.schema.json
+
+name: tissue-ground-truth
+version: 1
+type: uri_file
+
+description: >
+  Fechas reales de inicio de cada degradación, que en una planta real no se
+  conocen. No debe usarse para construir features ni para entrenar: sirve para
+  medir con cuánta anticipación avisó el modelo y para separar las fallas
+  silenciosas, que ningún modelo puede anticipar.
+
+tags:
+  capa: evaluacion
+  uso: solo_evaluacion
+
+# uri_file porque es un archivo puntual que se lee completo.
+path: ../../data-backfill/ground_truth/eventos.csv

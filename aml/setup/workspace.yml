@@ -1,0 +1,13 @@
+$schema: https://azuremlschemas.azureedge.net/latest/workspace.schema.json
+
+name: mlw-tissue-mlops
+location: eastus
+display_name: Tissue Mill MLOps
+description: >
+  Mantenimiento predictivo de los equipos rotativos críticos de una máquina de
+  papel tissue. Contiene los datos registrados, los experimentos y los modelos
+  del proyecto.
+
+tags:
+  proyecto: tissue-mill-mlops
+  entorno: dev
