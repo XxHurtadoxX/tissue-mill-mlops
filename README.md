@@ -15,7 +15,9 @@
 
 En una máquina de papel tissue la producción es una línea continua: si un equipo se detiene, se detiene toda la máquina. Una bomba de vacío que falla un domingo a las 2 a.m. puede costar 18 horas de parada y más de 40 toneladas de producción perdida. Las señales suelen estar disponibles antes del evento (la corriente del motor llevaba dos semanas subiendo, la ruta de vibración del mes ya marcaba la bomba en zona C), pero nadie las cruza porque viven en sistemas distintos y cada turno atiende lo suyo.
 
-Este proyecto predice esas fallas con 7–14 días de anticipación para que la intervención caiga en la parada programada, no en la madrugada.
+Este proyecto predice esas fallas con días de anticipación para que la intervención caiga en la parada programada, no en la madrugada.
+
+Un dato que resume el problema: sobre 37 eventos de falla en dos años y medio, **la ruta mensual de vibración que se usa hoy anticipa uno**. No porque la norma esté mal, sino porque una medición al mes no alcanza a atrapar una degradación que se desarrolla en cuatro semanas.
 
 ## El simulador de datos
 
@@ -105,9 +107,9 @@ El simulador no depende de librerías externas, de modo que el workflow diario c
 El simulador (Fase 0) es la base sobre la que se construye el resto del ciclo de MLOps, en fases incrementales:
 
 - [x] **Fase 0 (datos)**: simulador determinista, CI y generación diaria automática
-- [x] **Fase 1 (infraestructura)**: workspace y cómputo declarados en YAML, tabla de entrenamiento y tres data assets versionados *(estás aquí)*
-- [ ] **Fase 2**: AutoML + experimentación en notebooks con seguimiento de MLflow
-- [ ] **Fase 3**: entrenamiento como job parametrizado + búsqueda de hiperparámetros
+- [x] **Fase 1 (infraestructura)**: workspace y cómputo declarados en YAML, tabla de entrenamiento y tres data assets versionados
+- [x] **Fase 2 (exploración)**: líneas base medidas, AutoML, y el umbral elegido según la capacidad de inspección *(estás aquí)*
+- [ ] **Fase 3**: entrenamiento propio como job parametrizado + búsqueda de hiperparámetros
 - [ ] **Fase 4**: pipeline de componentes reutilizables (preparación → features → entrenamiento → evaluación)
 - [ ] **Fase 5**: integración continua con GitHub Actions (service principal, trunk-based development)
 - [ ] **Fase 6**: entornos dev/prod con aprobación manual y despliegue blue/green
