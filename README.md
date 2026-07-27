@@ -89,8 +89,8 @@ tissue-mill-mlops/
 
 El simulador (Fase 0) es la base sobre la que se construye el resto del ciclo de MLOps, en fases incrementales:
 
-- [x] **Fase 0 (datos)**: simulador determinista, CI y generación diaria automática *(estás aquí)*
-- [ ] **Fase 1**: workspace de Azure ML, cómputo gestionado por CLI, datos registrados como assets versionados
+- [x] **Fase 0 (datos)**: simulador determinista, CI y generación diaria automática
+- [x] **Fase 1 (infraestructura)**: workspace y cómputo declarados en YAML, tabla de entrenamiento y tres data assets versionados *(estás aquí)*
 - [ ] **Fase 2**: AutoML + experimentación en notebooks con seguimiento de MLflow
 - [ ] **Fase 3**: entrenamiento como job parametrizado + búsqueda de hiperparámetros
 - [ ] **Fase 4**: pipeline de componentes reutilizables (preparación → features → entrenamiento → evaluación)
