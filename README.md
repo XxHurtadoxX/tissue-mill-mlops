@@ -86,7 +86,9 @@ tissue-mill-mlops/
 ├── aml/                     # infraestructura de Azure ML declarada en YAML
 │   ├── setup/                 workspace y clúster de cómputo
 │   └── data/                  los tres data assets registrados
-├── tests/                   # determinismo, esquemas y guardas anti-fuga
+├── tests/
+│   ├── pipeline/              guardas anti-fuga, etiquetas y limpieza
+│   └── simulator/             determinismo y firmas físicas del generador
 ├── docs/
 │   ├── caso-negocio.md        el problema en planta y el valor en pesos
 │   └── diccionario-datos.md   esquemas, tags y por qué el problema es difícil
