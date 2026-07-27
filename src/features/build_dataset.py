@@ -344,12 +344,32 @@ transformations:
       header: all_files_same_headers
 """
 
+# Columnas que el modelo no debe ver, y el motivo de cada una.
+#
+#   fecha        Aprendería tendencias del calendario en vez de física. Además
+#                el modelo tendrá que operar sobre fechas futuras que nunca vio.
+#   nombre       Es redundante con el código de equipo.
+#   equipo_code  Dejaría que el modelo memorice qué bombas fallan más. Con 37
+#                eventos repartidos en 12 equipos esas tasas son ruidosas, y un
+#                modelo que dependa de ellas no sirve para un equipo nuevo.
+#
+# Se descartan en el descriptor y no en el CSV, porque la evaluación local sí
+# necesita fecha y equipo para agrupar los días en eventos de falla.
+COLUMNAS_NO_PREDICTORAS = ("fecha", "nombre", "equipo_code")
 
-def write_mltable(out_dir: str) -> str:
+DROP_TEMPLATE = """  - drop_columns: [{columnas}]
+"""
+
+
+def write_mltable(out_dir: str,
+                  drop_columns: tuple[str, ...] | None = None) -> str:
     """Escribe el descriptor MLTable junto a la tabla de entrenamiento."""
+    contenido = MLTABLE_TEMPLATE
+    if drop_columns:
+        contenido += DROP_TEMPLATE.format(columnas=", ".join(drop_columns))
     destino = os.path.join(out_dir, "MLTable")
     with open(destino, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write(MLTABLE_TEMPLATE)
+        fh.write(contenido)
     return destino
 
 

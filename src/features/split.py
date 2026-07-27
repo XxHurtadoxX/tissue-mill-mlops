@@ -31,7 +31,7 @@ import os
 import pandas as pd
 
 from ..model.evaluate import identificar_eventos
-from .build_dataset import write_mltable
+from .build_dataset import COLUMNAS_NO_PREDICTORAS, write_mltable
 
 # Los cortes se eligieron mirando cuántos eventos de falla quedaba en cada lado,
 # no cuántas filas. Con 37 eventos en total, repartir por porcentaje de filas
@@ -65,10 +65,15 @@ def resumen(nombre: str, sub: pd.DataFrame) -> dict:
 
 
 def escribir(sub: pd.DataFrame, destino: str) -> None:
-    """Escribe el conjunto con su descriptor MLTable, listo para registrarse."""
+    """Escribe el conjunto con su descriptor MLTable, listo para registrarse.
+
+    El CSV conserva todas las columnas, porque la evaluación local necesita la
+    fecha y el equipo para agrupar los días en eventos. El descriptor, en
+    cambio, las descarta para que el modelo no las use como predictoras.
+    """
     os.makedirs(destino, exist_ok=True)
     sub.to_csv(os.path.join(destino, "training_table.csv"), index=False)
-    write_mltable(destino)
+    write_mltable(destino, drop_columns=COLUMNAS_NO_PREDICTORAS)
 
 
 def build_parser() -> argparse.ArgumentParser:

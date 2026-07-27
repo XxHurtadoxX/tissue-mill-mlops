@@ -1,0 +1,59 @@
+$schema: https://azuremlschemas.azureedge.net/latest/autoMLJob.schema.json
+type: automl
+task: classification
+
+experiment_name: tissue-falla-14d
+display_name: automl-sin-identidad-equipo
+description: >
+  Explora modelos para anticipar la falla de un equipo rotativo dentro de los
+  próximos catorce días. La comparación de referencia es la práctica actual de
+  la planta, que anticipa 1 de cada 37 eventos, y un umbral simple sobre la
+  tendencia de vibración, que anticipa 31.
+
+compute: azureml:cpu-cluster
+
+target_column_name: falla_14d
+
+# El AUC ponderado es la métrica de selección porque solo el 4.7% de las filas
+# son positivas: un modelo que nunca avise acierta el 95% y no evita una sola
+# parada. La decisión final de umbral no sale de aquí, sino de la curva de
+# costos, donde no anticipar una falla cuesta unas quinientas veces más que una
+# inspección en vano.
+primary_metric: AUC_weighted
+
+training_data:
+  type: mltable
+  path: azureml:tissue-train-table:1
+
+# Conjunto de validación explícito, en vez de la validación cruzada aleatoria
+# que AutoML usa por omisión. Los días vecinos de un mismo equipo comparten casi
+# toda su ventana de siete días, y la etiqueta abarca catorce, así que repartir
+# al azar dejaría filas casi idénticas a ambos lados e inflaría el resultado.
+# Al declarar validation_data no debe declararse n_cross_validations: son
+# opciones mutuamente excluyentes.
+validation_data:
+  type: mltable
+  path: azureml:tissue-valid-table:1
+
+limits:
+  # Tope de gasto. Sin timeout_minutes un trabajo de AutoML puede correr durante
+  # horas sobre el clúster.
+  timeout_minutes: 60
+  trial_timeout_minutes: 10
+  max_trials: 25
+  # No conviene superar el máximo de nodos del clúster: los trabajos extra
+  # esperarían en cola sin ganar nada.
+  max_concurrent_trials: 2
+  enable_early_termination: true
+
+featurization:
+  # Imputa los nulos estructurales de los sensores que no todos los equipos
+  # tienen, codifica las categóricas y escala las numéricas.
+  mode: auto
+
+training:
+  # Los ensambles suelen ganar por poco y son más difíciles de explicar a
+  # mantenimiento. Se deja el de votación y se descarta el apilado, que además
+  # consume una parte del conjunto de validación para entrenar el meta-modelo.
+  enable_stack_ensemble: false
+  enable_vote_ensemble: true
