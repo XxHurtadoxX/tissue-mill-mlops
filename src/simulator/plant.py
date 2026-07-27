@@ -47,7 +47,13 @@ SIGNAL_CODE = {
 # un modelo bueno se mueve entre 0.75 y 0.90. La dificultad del problema es
 # parte de lo que se está simulando.
 FAIL_GAIN = {
-    "vibration": 0.50,
+    # La ganancia de vibración está fijada para que un equipo en fase avanzada
+    # de degradación cruce el umbral de zona C de la norma ISO 20816 (4.5 mm/s
+    # para esta clase de máquina). Con una base de 2.5 mm/s hace falta llegar
+    # cerca de duplicarla. Si se baja más, la regla que mantenimiento aplica hoy
+    # deja de dispararse y el proyecto se queda sin línea base con la cual
+    # compararse, que fue justo lo que pasó en una versión anterior.
+    "vibration": 0.85,
     "temp": 0.16,
     "current": 0.05,
     "vacuum": -0.07,

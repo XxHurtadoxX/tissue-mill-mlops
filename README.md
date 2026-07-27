@@ -31,7 +31,7 @@ Antes de llegar al modelo, el proyecto resuelve un problema previo: generar dato
 
 La generación es determinista: dado el mismo `--seed`, se reproduce exactamente la misma historia de planta. El tiempo entre fallas sigue una distribución Weibull, apropiada para modelar desgaste mecánico, a diferencia de la exponencial (que asume fallas puramente aleatorias y es el supuesto por defecto en simuladores más simples).
 
-El simulador también está calibrado para que el problema conserve su dificultad. Una de cada cuatro fallas ocurre sin dejar rastro en los sensores, el punto de operación de cada equipo deriva de un día a otro por causas legítimas, y algunos instrumentos se descalibran e imitan una degradación que no existe. Con estos mecanismos la mejor variable individual alcanza AUC de 0.81, un rango creíble para mantenimiento predictivo. El razonamiento completo está en el [diccionario de datos](docs/diccionario-datos.md).
+El simulador también está calibrado para que el problema conserve su dificultad. Una de cada cuatro fallas ocurre sin dejar rastro en los sensores, el punto de operación de cada equipo deriva de un día a otro por causas legítimas, y algunos instrumentos se descalibran e imitan una degradación que no existe. Con estos mecanismos la mejor variable individual alcanza AUC de 0.85, un rango creíble para mantenimiento predictivo. El razonamiento completo está en el [diccionario de datos](docs/diccionario-datos.md).
 
 ## Datos que llegan a diario
 

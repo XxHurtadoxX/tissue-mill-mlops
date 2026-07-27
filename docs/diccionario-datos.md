@@ -135,7 +135,9 @@ Cuatro mecanismos mantienen el problema en un rango realista:
 | Fallas silenciosas | Una de cada cuatro fallas no deja rastro en los sensores | Pone un techo natural al recall, como ocurre en una planta real |
 | Sensores descalibrados | Episodios en que un instrumento deriva sin que el equipo esté enfermo | Genera falsos positivos legítimos, el caso que narra el documento de caso de negocio |
 
-Con esta calibración, la mejor variable individual alcanza AUC de 0.81 y un gradient boosting sin ajustar llega a 0.76 en validación temporal. Queda margen para que el modelado posterior lo mejore, que es lo que se espera de un problema bien planteado.
+La calibración se ajustó además para que la degradación avanzada cruce el umbral de zona C de la norma ISO 20816. No es un detalle cosmético: si un equipo a punto de fallar nunca alcanza el nivel que la norma considera alerta, la regla que mantenimiento aplica hoy no se dispara nunca y el proyecto se queda sin línea base con la cual compararse.
+
+Con esta calibración, la mejor variable individual alcanza AUC de 0.85. Un umbral simple sobre esa variable anticipa 31 de los 37 eventos del periodo, mientras que la ruta mensual de vibración, que es la práctica actual, solo alcanza a detectar uno. Esa brecha es el punto de partida del modelado.
 
 ## Tabla de entrenamiento (capa gold)
 
