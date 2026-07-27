@@ -1,0 +1,19 @@
+$schema: https://azuremlschemas.azureedge.net/latest/data.schema.json
+
+name: tissue-train-table
+version: 1
+type: mltable
+
+description: >
+  Conjunto de entrenamiento, desde 2024-01-07 hasta 2025-09-30. Contiene 7.540
+  filas y 24 eventos de falla, con 4.43% de positivos. La partición es temporal
+  porque los días vecinos de un mismo equipo comparten ventana y evento, de modo
+  que una partición aleatoria dejaría filas casi idénticas a ambos lados.
+
+tags:
+  capa: gold
+  particion: train
+  corte_hasta: "2025-09-30"
+  eventos: "24"
+
+path: ../../workdir/splits/train

@@ -1,0 +1,19 @@
+$schema: https://azuremlschemas.azureedge.net/latest/data.schema.json
+
+name: tissue-valid-table
+version: 1
+type: mltable
+
+description: >
+  Conjunto de validación, desde 2025-10-01 hasta 2026-02-28. Contiene 1.793
+  filas y 9 eventos de falla. Se usa para comparar modelos entre sí y elegir el
+  candidato. Con nueve eventos la estimación tiene un margen amplio, así que
+  sirve para ordenar alternativas pero no para reportar una cifra definitiva.
+
+tags:
+  capa: gold
+  particion: valid
+  corte_desde: "2025-10-01"
+  eventos: "9"
+
+path: ../../workdir/splits/valid
