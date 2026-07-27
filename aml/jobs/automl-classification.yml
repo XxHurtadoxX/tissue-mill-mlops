@@ -23,7 +23,7 @@ primary_metric: AUC_weighted
 
 training_data:
   type: mltable
-  path: azureml:tissue-train-table:1
+  path: azureml:tissue-train-table:2
 
 # Conjunto de validación explícito, en vez de la validación cruzada aleatoria
 # que AutoML usa por omisión. Los días vecinos de un mismo equipo comparten casi
@@ -33,12 +33,12 @@ training_data:
 # opciones mutuamente excluyentes.
 validation_data:
   type: mltable
-  path: azureml:tissue-valid-table:1
+  path: azureml:tissue-valid-table:2
 
 limits:
   # Tope de gasto. Sin timeout_minutes un trabajo de AutoML puede correr durante
   # horas sobre el clúster.
-  timeout_minutes: 60
+  timeout_minutes: 30
   trial_timeout_minutes: 10
   max_trials: 25
   # No conviene superar el máximo de nodos del clúster: los trabajos extra
