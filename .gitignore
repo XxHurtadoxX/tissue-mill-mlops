@@ -28,3 +28,7 @@ Thumbs.db
 #               python -m src.simulator.generate --from 2024-01-01 --to <hoy> --out workdir
 #               python -m src.features.build_dataset --data workdir --out workdir/gold
 workdir/
+
+# Registro local de MLflow, que solo se usa para probar el script sin conexión.
+# Las corridas que cuentan viven en el workspace.
+mlruns/

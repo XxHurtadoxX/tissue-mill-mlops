@@ -3,3 +3,10 @@
 # Herramientas de calidad que corre la CI en cada pull request.
 flake8==7.1.1
 pytest==8.3.4
+
+# Modelado y seguimiento de experimentos. Solo hacen falta para trabajar en
+# local: los trabajos que corren dentro de Azure Machine Learning ya traen su
+# propio entorno, y el workflow que genera datos a diario no usa nada de esto.
+scikit-learn==1.6.1
+mlflow==3.14.0
+azureml-mlflow>=1.62.0
