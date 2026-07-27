@@ -15,4 +15,4 @@ tags:
   uso: solo_evaluacion
 
 # uri_file porque es un archivo puntual que se lee completo.
-path: ../../data-backfill/ground_truth/eventos.csv
+path: ../../workdir/ground_truth/eventos.csv

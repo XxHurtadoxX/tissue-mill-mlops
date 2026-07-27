@@ -16,8 +16,8 @@ Los assets apuntan al backfill histórico, que no está versionado. Hay que
 generarlo antes:
 
 ```bash
-python -m src.simulator.generate --from 2024-01-01 --to 2026-07-26 --out data-backfill
-python -m src.features.build_dataset --data data-backfill --out data-backfill/gold
+python -m src.simulator.generate --from 2024-01-01 --to 2026-07-26 --out workdir
+python -m src.features.build_dataset --data workdir --out workdir/gold
 ```
 
 ## Provisionar

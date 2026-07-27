@@ -16,5 +16,5 @@ tags:
 
 # uri_folder porque es un directorio completo de archivos que se recorre entero.
 # Requiere haber generado antes el backfill histórico:
-#   python -m src.simulator.generate --from 2024-01-01 --to <hoy> --out data-backfill
-path: ../../data-backfill/bronze/historian
+#   python -m src.simulator.generate --from 2024-01-01 --to <hoy> --out workdir
+path: ../../workdir/bronze/historian

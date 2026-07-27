@@ -34,6 +34,33 @@ jobs:
       - name: Generar el extracto de hoy (UTC)
         run: python -m src.simulator.generate --date "$(date -u +%F)"
 
+      # La muestra versionada se mantiene en una ventana móvil. Sin esto el
+      # repositorio crecería sin límite, y para mostrar que la ingesta funciona
+      # basta con los últimos meses: el histórico completo se regenera cuando
+      # se necesita, porque el simulador es determinista.
+      - name: Podar los extractos más viejos que la ventana
+        env:
+          RETENCION_DIAS: "120"
+        run: |
+          corte=$(date -u -d "-${RETENCION_DIAS} days" +%F)
+          echo "Conservando extractos desde $corte en adelante."
+          podados=0
+          for f in data/bronze/historian/*.csv; do
+            dia=$(basename "$f" .csv)
+            if [[ "$dia" < "$corte" ]]; then
+              git rm -q --ignore-unmatch "$f"
+              podados=$((podados + 1))
+            fi
+          done
+          for f in data/bronze/produccion/batches_*.csv; do
+            dia=$(basename "$f" .csv)
+            if [[ "${dia#batches_}" < "$corte" ]]; then
+              git rm -q --ignore-unmatch "$f"
+              podados=$((podados + 1))
+            fi
+          done
+          echo "Extractos podados: $podados"
+
       - name: Commit y push si hay datos nuevos
         run: |
           git config user.name  "github-actions[bot]"

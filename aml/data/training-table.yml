@@ -18,5 +18,5 @@ tags:
 # mltable es el único tipo que aceptan los trabajos de AutoML, porque necesitan
 # el esquema junto a los datos. La carpeta debe contener el CSV y su descriptor
 # MLTable, ambos generados por:
-#   python -m src.features.build_dataset --data data-backfill --out data-backfill/gold
-path: ../../data-backfill/gold
+#   python -m src.features.build_dataset --data workdir --out workdir/gold
+path: ../../workdir/gold

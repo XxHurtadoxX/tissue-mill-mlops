@@ -6,7 +6,7 @@ siguientes 14 días.
 
 Uso::
 
-    python -m src.features.build_dataset --data data-backfill --out data-backfill/gold
+    python -m src.features.build_dataset --data workdir --out workdir/gold
 
 Dos decisiones de diseño merecen explicación, porque son las que sostienen la
 validez del dataset.
@@ -360,9 +360,9 @@ def _parse_date(value: str) -> date:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Construye la tabla de entrenamiento a partir de los datos bronze.")
-    parser.add_argument("--data", default="data-backfill",
-                        help="Carpeta con la estructura bronze/ (por defecto data-backfill).")
-    parser.add_argument("--out", default="data-backfill/gold",
+    parser.add_argument("--data", default="workdir",
+                        help="Carpeta con la estructura bronze/ (por defecto workdir).")
+    parser.add_argument("--out", default="workdir/gold",
                         help="Carpeta de salida para la tabla de entrenamiento.")
     parser.add_argument("--horizon", type=int, default=HORIZON_DAYS,
                         help="Horizonte de predicción en días.")

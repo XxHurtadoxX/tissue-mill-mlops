@@ -13,12 +13,18 @@ Thumbs.db
 .vscode/
 .idea/
 
-# NOTA: la carpeta data/ SÍ se versiona a propósito. El proyecto simula una
-# planta que genera datos a diario, y el cron los commitea al repo. No la
-# ignores: es parte de la historia del proyecto.
-
-# El backfill histórico (2024 en adelante) ocupa unos 41 MB y multiplicaría por
-# catorce el tamaño del repositorio sin aportar nada nuevo: el simulador es
-# determinista, así que se reconstruye idéntico con un solo comando.
-#   python -m src.simulator.generate --from 2024-01-01 --to <hoy> --out data-backfill
-data-backfill/
+# Hay dos carpetas de datos y cumplen funciones distintas.
+#
+#   data/     SÍ se versiona. Es la muestra viva: el workflow programado
+#             escribe ahí el extracto de cada día, igual que un job de ingesta
+#             nocturno en producción. Ese historial es parte de lo que el
+#             proyecto demuestra.
+#
+#   workdir/  NO se versiona. Es el espacio de trabajo local donde se
+#             reconstruye el histórico completo y se materializa la tabla de
+#             entrenamiento. Ocupa unos 45 MB y multiplicaría por quince el
+#             tamaño del repositorio sin aportar información nueva, porque el
+#             simulador es determinista y lo regenera idéntico:
+#               python -m src.simulator.generate --from 2024-01-01 --to <hoy> --out workdir
+#               python -m src.features.build_dataset --data workdir --out workdir/gold
+workdir/

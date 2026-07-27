@@ -40,50 +40,63 @@ Una planta real genera datos todos los días, así que el repositorio también l
 ## Instalación y uso
 
 ```bash
-# 1. Clonar e instalar herramientas de desarrollo
 git clone https://github.com/XxHurtadoxX/tissue-mill-mlops.git
 cd tissue-mill-mlops
-pip install -r requirements-dev.txt      # el simulador no requiere dependencias externas
+pip install -r requirements-dev.txt
+```
 
-# 2. Generar datos
-python -m src.simulator.generate --date 2026-07-19      # un solo día
-python -m src.simulator.generate --days 60              # los últimos 60 días
+El repositorio ya trae una muestra de datos en `data/`, así que se puede explorar sin generar nada. Para reconstruir el histórico completo y armar la tabla de entrenamiento:
 
-# Backfill histórico. Ocupa unos 41 MB y no se versiona, porque el simulador
-# es determinista y lo reconstruye idéntico cuando haga falta.
-python -m src.simulator.generate --from 2024-01-01 --to 2026-07-26 --out data-backfill
+```bash
+# Histórico de dos años y medio (unos 45 MB, no versionado)
+python -m src.simulator.generate --from 2024-01-01 --to 2026-07-26 --out workdir
 
-# 3. Construir la tabla de entrenamiento
-python -m src.features.build_dataset --data data-backfill --out data-backfill/gold
+# Tabla de entrenamiento: una fila por equipo y por día
+python -m src.features.build_dataset --data workdir --out workdir/gold
+```
 
-# 4. Correr calidad (lo mismo que la CI)
+Para comprobar el estado del código, lo mismo que corre la integración continua:
+
+```bash
 flake8 src tests
 pytest
 ```
 
-Los datos crudos caen bajo `data/` siguiendo el patrón **bronze**. El constructor del dataset aplica la limpieza (silver) y produce la tabla de entrenamiento (gold), con una fila por equipo y por día.
+### Dónde viven los datos
+
+| Carpeta | Versionada | Qué contiene |
+|---|---|---|
+| `data/` | Sí | Muestra viva. El workflow programado escribe ahí el extracto de cada día y conserva una ventana móvil de 120 días |
+| `workdir/` | No | Espacio de trabajo local: histórico completo y tabla de entrenamiento. Se regenera con los dos comandos de arriba |
+
+Ambas siguen el patrón medallón: los datos crudos entran como **bronze**, la limpieza produce **silver** y la tabla lista para entrenar es **gold**.
 
 ## Estructura del repositorio
 
 ```
 tissue-mill-mlops/
-├── src/simulator/
-│   ├── plant.py        # modelo físico: equipos, tags, cronograma de fallas (Weibull)
-│   ├── dirty.py        # inyección de suciedad (-9999, sensores congelados)
-│   └── generate.py     # generador + CLI (por día / rango / backfill)
-├── src/features/
-│   ├── clean.py        # bronze a silver: descarta lecturas BAD y flatlines
-│   └── build_dataset.py # capa gold: ventanas móviles, contexto y etiquetas
-├── tests/              # determinismo, esquemas, tags y guardas anti-fuga
-├── data/               # datos versionados (bronze) + ground_truth
+├── src/
+│   ├── simulator/           # genera los datos (solo librería estándar)
+│   │   ├── plant.py           equipos, tags ISA-5.1, cronograma de fallas Weibull
+│   │   ├── dirty.py           lecturas BAD y sensores congelados
+│   │   └── generate.py        CLI: por día, por rango o histórico completo
+│   └── features/            # convierte los datos en tabla de entrenamiento
+│       ├── clean.py           bronze a silver: descarta lo que no es confiable
+│       └── build_dataset.py   gold: ventanas móviles, contexto y etiquetas
+├── aml/                     # infraestructura de Azure ML declarada en YAML
+│   ├── setup/                 workspace y clúster de cómputo
+│   └── data/                  los tres data assets registrados
+├── tests/                   # determinismo, esquemas y guardas anti-fuga
 ├── docs/
-│   ├── caso-negocio.md      # el "antes/después", el valor en pesos
-│   └── diccionario-datos.md # gramática de tags, esquemas, roster de equipos
-├── .github/workflows/
-│   ├── ci.yml          # lint + tests en cada PR
-│   └── daily-data.yml  # cron: genera y commitea el extracto diario
-└── requirements-dev.txt
+│   ├── caso-negocio.md        el problema en planta y el valor en pesos
+│   └── diccionario-datos.md   esquemas, tags y por qué el problema es difícil
+├── data/                    # muestra viva versionada (ver tabla de arriba)
+└── .github/workflows/
+    ├── ci.yml                 lint y pruebas en cada cambio
+    └── daily-data.yml         extracto diario programado
 ```
+
+El simulador no depende de librerías externas, de modo que el workflow diario corre sin instalar nada. Las dependencias de `requirements.txt` (pandas y numpy) solo hacen falta para construir la tabla de entrenamiento.
 
 ## Roadmap
 
