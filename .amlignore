@@ -11,6 +11,7 @@
 workdir/
 data/
 mlruns/
+outputs/
 aml/workdir/
 
 __pycache__/

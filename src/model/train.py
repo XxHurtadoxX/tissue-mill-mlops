@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 
 import mlflow
 import mlflow.sklearn
@@ -112,6 +113,39 @@ def _leer(ruta: str) -> pd.DataFrame:
     raise SystemExit(f"No se encontró una tabla en {ruta}.")
 
 
+# Azure Machine Learning sube al final del trabajo todo lo que quede en esta
+# carpeta, sin necesidad de declararla como salida.
+CARPETA_SALIDA_AML = "outputs"
+
+
+def guardar_modelo(modelo: Pipeline, destino: str | None = None) -> str:
+    """Guarda el modelo en formato MLflow, de forma compatible con el backend.
+
+    Se usa ``save_model`` sobre la carpeta de salidas y no ``log_model``. El
+    entorno curado trae MLflow 3, cuya función de registro llama a la API de
+    "logged models", que el servidor de seguimiento de Azure todavía no expone y
+    responde 404. Guardar en disco produce exactamente el mismo formato, con su
+    archivo MLmodel y su especificación de entorno, así que el modelo se puede
+    registrar después y sigue habilitando el despliegue sin código.
+
+    Se intenta además el registro por la vía tradicional, porque deja el modelo
+    asociado a la corrida y facilita compararlo en el estudio. Si el backend no
+    lo admite, no debe tumbar el entrenamiento: el modelo ya está a salvo.
+    """
+    ruta = os.path.join(destino or CARPETA_SALIDA_AML, "model")
+    os.makedirs(os.path.dirname(ruta) or ".", exist_ok=True)
+    if os.path.exists(ruta):
+        shutil.rmtree(ruta)
+    mlflow.sklearn.save_model(modelo, ruta)
+
+    try:
+        mlflow.sklearn.log_model(modelo, artifact_path="model")
+    except Exception as exc:  # noqa: BLE001
+        print(f"Aviso: no se pudo asociar el modelo a la corrida ({exc}). "
+              f"Queda guardado en {ruta}.")
+    return ruta
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Entrena el clasificador de falla a catorce días.")
@@ -163,12 +197,7 @@ def main(argv: list[str] | None = None) -> int:
     metricas = entrenar_y_evaluar(train, valid, modelo, args.capacidad, verdad)
     mlflow.log_metrics({k: v for k, v in metricas.items() if pd.notna(v)})
 
-    # Formato MLflow: es lo que habilita el despliegue sin escribir un script de
-    # puntuación en la fase de producción.
-    mlflow.sklearn.log_model(modelo, name="model")
-    if args.output:
-        os.makedirs(args.output, exist_ok=True)
-        mlflow.sklearn.save_model(modelo, os.path.join(args.output, "model"))
+    guardar_modelo(modelo, args.output)
 
     print(f"{METRICA_PRINCIPAL}: {metricas[METRICA_PRINCIPAL]:.4f}")
     print(f"AUC intra-equipo: {metricas['auc_intra_equipo']:.4f}")

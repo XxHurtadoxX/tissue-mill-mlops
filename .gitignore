@@ -32,3 +32,7 @@ workdir/
 # Registro local de MLflow, que solo se usa para probar el script sin conexión.
 # Las corridas que cuentan viven en el workspace.
 mlruns/
+
+# Carpeta donde el entrenamiento deja el modelo. Azure la sube sola al terminar
+# el trabajo; en local es solo un artefacto de prueba.
+outputs/
