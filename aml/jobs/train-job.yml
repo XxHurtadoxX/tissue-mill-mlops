@@ -32,10 +32,11 @@ inputs:
     type: uri_file
     path: azureml:tissue-ground-truth:1
 
-# Entorno curado de Azure ML, no uno propio. Definir un entorno personalizado
-# obligaría a construir una imagen, y eso crea un Container Registry con tarifa
-# diaria fija. Mientras las dependencias del curado alcancen, no hay motivo
-# para asumir ese costo.
-environment: azureml://registries/azureml/environments/sklearn-1.5/versions/50
+# Entorno propio, declarado en aml/environments/. Se intentó primero con el
+# curado sklearn-1.5, y no sirve para la búsqueda de hiperparámetros: ese
+# entorno no trae imagen sino un contexto de construcción alojado en
+# almacenamiento de Microsoft, y los trabajos hijos de un sweep solo aceptan
+# contextos del workspace o de un registro propio.
+environment: azureml:tissue-training@latest
 
 compute: azureml:cpu-cluster

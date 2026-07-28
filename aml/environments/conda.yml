@@ -1,0 +1,19 @@
+name: tissue-training
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+      - pandas==2.2.3
+      - numpy==2.1.3
+      # Se fija la misma versión con la que se desarrolla en local, para que el
+      # modelo entrenado en Azure se pueda cargar aquí sin advertencias de
+      # incompatibilidad al deserializar.
+      - scikit-learn==1.6.1
+      # MLflow 2 y no 3 de forma deliberada. La versión 3 registra modelos con
+      # la API de "logged models", que el servidor de seguimiento de Azure
+      # todavía no expone y responde 404. Fijar la 2 evita el problema en el
+      # origen en vez de sortearlo.
+      - mlflow==2.19.0
+      - azureml-mlflow==1.60.0

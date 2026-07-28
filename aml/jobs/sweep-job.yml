@@ -86,7 +86,7 @@ trial:
     --n-estimators ${{search_space.n_estimators}}
     --max-features ${{search_space.max_features}}
     --min-samples-leaf ${{search_space.min_samples_leaf}}
-  environment: azureml://registries/azureml/environments/sklearn-1.5/versions/50
+  environment: azureml:tissue-training@latest
 
 inputs:
   train:
