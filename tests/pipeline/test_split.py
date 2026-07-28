@@ -26,10 +26,23 @@ def test_los_conjuntos_no_se_solapan():
 
 
 def test_no_se_pierde_ni_se_duplica_ninguna_fila():
+    """Los tres conjuntos disjuntos cubren exactamente la tabla original."""
     df = _tabla()
     partes = partir(df, "2024-02-01", "2024-03-01")
-    total = sum(len(sub) for sub in partes.values())
+    total = sum(len(partes[k]) for k in ("train", "valid", "test"))
     assert total == len(df)
+
+
+def test_train_full_junta_entrenamiento_y_validacion():
+    """Es el conjunto con el que se ajusta el modelo que se despliega."""
+    partes = partir(_tabla(), "2024-02-01", "2024-03-01")
+    assert len(partes["train_full"]) == len(partes["train"]) + len(partes["valid"])
+
+
+def test_train_full_no_incluye_el_conjunto_de_prueba():
+    """La regla que no se puede romper: la prueba queda fuera de todo ajuste."""
+    partes = partir(_tabla(), "2024-02-01", "2024-03-01")
+    assert partes["train_full"]["fecha"].max() < partes["test"]["fecha"].min()
 
 
 def test_el_orden_temporal_se_respeta():

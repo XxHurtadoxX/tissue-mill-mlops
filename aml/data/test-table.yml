@@ -1,0 +1,26 @@
+$schema: https://azuremlschemas.azureedge.net/latest/data.schema.json
+
+name: tissue-test-table
+version: 1
+type: mltable
+
+description: >
+  Conjunto de prueba, desde 2026-03-01 hasta 2026-07-26. Contiene 1.761 filas y
+  6 eventos de falla, uno de ellos silencioso.
+
+  Se apartó al construir el dataset y no intervino en ninguna decisión: ni en la
+  selección de variables, ni en la del algoritmo, ni en la de hiperparámetros,
+  ni en la del umbral. Por eso su resultado es la única estimación no sesgada
+  del proyecto, y por eso se abrió una sola vez.
+
+  Se registra ahora, ya abierto, para que quede trazado contra qué datos se
+  reportó la cifra final. No debe usarse para ajustar nada.
+
+tags:
+  capa: gold
+  particion: test
+  uso: solo_evaluacion_final
+  corte_desde: "2026-03-01"
+  eventos: "6"
+
+path: ../../workdir/splits/test

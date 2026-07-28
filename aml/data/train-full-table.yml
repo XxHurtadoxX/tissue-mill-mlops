@@ -1,0 +1,20 @@
+$schema: https://azuremlschemas.azureedge.net/latest/data.schema.json
+
+name: tissue-train-full-table
+version: 1
+type: mltable
+
+description: >
+  Entrenamiento y validación juntos, desde 2024-01-07 hasta 2026-02-28. Contiene
+  9.333 filas y 32 eventos de falla. Es el conjunto con el que se ajusta el
+  modelo que se despliega: una vez elegidos los hiperparámetros con la
+  validación, desaprovechar sus nueve eventos sería tirar más de un tercio de la
+  evidencia disponible. El conjunto de prueba sigue fuera.
+
+tags:
+  capa: gold
+  particion: train_full
+  corte_hasta: "2026-02-28"
+  eventos: "32"
+
+path: ../../workdir/splits/train_full

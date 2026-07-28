@@ -1,0 +1,38 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+type: command
+
+experiment_name: tissue-falla-14d
+display_name: modelo-final
+description: >
+  Ajusta el modelo que se propone para despliegue, con los hiperparámetros que
+  encontró la búsqueda y usando todos los datos anteriores al conjunto de
+  prueba.
+
+  Evalúa contra la prueba solo para dejar registrada la cifra final. Ese
+  conjunto ya se abrió y no se tomará ninguna decisión más a partir de él: si se
+  ajustara algo mirando ese resultado, dejaría de ser una estimación honesta.
+
+code: ../..
+
+command: >-
+  python -m src.model.train
+  --train ${{inputs.train}}
+  --valid ${{inputs.test}}
+  --ground-truth ${{inputs.ground_truth}}
+  --n-estimators 200
+  --max-features log2
+  --min-samples-leaf 4
+
+inputs:
+  train:
+    type: mltable
+    path: azureml:tissue-train-full-table:1
+  test:
+    type: mltable
+    path: azureml:tissue-test-table:1
+  ground_truth:
+    type: uri_file
+    path: azureml:tissue-ground-truth:1
+
+environment: azureml:tissue-training@latest
+compute: azureml:cpu-cluster

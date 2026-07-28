@@ -43,12 +43,22 @@ CORTE_VALID = "2026-02-28"
 
 def partir(df: pd.DataFrame, corte_train: str = CORTE_TRAIN,
            corte_valid: str = CORTE_VALID) -> dict[str, pd.DataFrame]:
-    """Devuelve los tres conjuntos, sin solapamiento y en orden temporal."""
+    """Devuelve los conjuntos, sin solapamiento y en orden temporal.
+
+    Además de los tres conjuntos separados devuelve ``train_full``, que junta
+    entrenamiento y validación. Es el que se usa para ajustar el modelo que se
+    despliega: una vez elegidos los hiperparámetros, no hay razón para
+    desaprovechar los nueve eventos de la validación, que son más de un tercio
+    de los disponibles. Lo que no puede tocarse es el conjunto de prueba.
+    """
     fecha = df["fecha"].astype(str)
+    train = df[fecha <= corte_train].reset_index(drop=True)
+    valid = df[(fecha > corte_train) & (fecha <= corte_valid)].reset_index(drop=True)
     return {
-        "train": df[fecha <= corte_train].reset_index(drop=True),
-        "valid": df[(fecha > corte_train) & (fecha <= corte_valid)].reset_index(drop=True),
+        "train": train,
+        "valid": valid,
         "test": df[fecha > corte_valid].reset_index(drop=True),
+        "train_full": pd.concat([train, valid], ignore_index=True),
     }
 
 
