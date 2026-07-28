@@ -144,6 +144,45 @@ def evaluar(df: pd.DataFrame, scores: np.ndarray, umbral: float,
     )
 
 
+def auc_intra_equipo(df: pd.DataFrame, scores: np.ndarray) -> dict[str, float]:
+    """AUC calculado dentro de cada equipo, promediando después.
+
+    Distingue dos capacidades que el AUC global mezcla y que valen cosas muy
+    distintas en planta.
+
+    La primera es ordenar equipos entre sí. Es fácil de conseguir y de poco uso:
+    basta con saber que las bombas de vacío fallan cuatro veces más que los
+    agitadores para obtener un AUC global respetable, aunque el modelo no note
+    ninguna degradación. Medido aparte, un modelo que solo conoce la identidad
+    del equipo alcanza 0.69 de AUC global.
+
+    La segunda es reconocer, en una misma máquina, que hoy está peor que la
+    semana pasada. Es la que de verdad decide a quién se manda a inspeccionar, y
+    es la que mide esta función. Ese mismo modelo de solo identidad obtiene aquí
+    exactamente 0.50, es decir nada.
+
+    Reportar solo el AUC global permite presentar como logro lo que apenas es un
+    censo de tasas históricas.
+    """
+    trabajo = df[["equipo_code", "falla_14d"]].copy()
+    trabajo["score"] = np.asarray(scores, dtype=float)
+
+    por_equipo: dict[str, float] = {}
+    for code, grupo in trabajo.groupby("equipo_code"):
+        # Un equipo sin fallas en el periodo no aporta información aquí.
+        if grupo["falla_14d"].nunique() < 2:
+            continue
+        por_equipo[code] = float(
+            roc_auc_score(grupo["falla_14d"], grupo["score"]))
+    return por_equipo
+
+
+def auc_intra_promedio(df: pd.DataFrame, scores: np.ndarray) -> float:
+    """Promedio simple del AUC dentro de cada equipo evaluable."""
+    por_equipo = auc_intra_equipo(df, scores)
+    return float(np.mean(list(por_equipo.values()))) if por_equipo else np.nan
+
+
 # Costos de referencia, en dólares, tomados del caso de negocio.
 #
 # Es tentador expresarlo todo en horas para no depender de precios, y es un

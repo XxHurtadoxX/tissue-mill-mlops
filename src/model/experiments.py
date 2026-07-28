@@ -27,7 +27,7 @@ import mlflow
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 
-from . import reference
+from . import features, reference
 from .baseline import calcular_todas
 from .evaluate import Resultado, costo_en_dolares, evaluar
 from .threshold import PRESUPUESTOS, curva_operacion, recomendar
@@ -75,9 +75,9 @@ def registrar_modelo(train: pd.DataFrame, valid: pd.DataFrame,
     mismo modelo cambia por completo según dónde se ponga el umbral y esa
     variación es la información que necesita mantenimiento para decidir.
     """
-    modelo, columnas = reference.entrenar(train)
-    scores = reference.puntuar(modelo, columnas, valid)
-    auc = roc_auc_score(valid[reference.OBJETIVO], scores)
+    modelo = reference.entrenar(train)
+    scores = reference.puntuar(modelo, valid)
+    auc = roc_auc_score(valid[features.OBJETIVO], scores)
 
     curva = curva_operacion(valid, scores)
     elegido = recomendar(curva, capacidad)

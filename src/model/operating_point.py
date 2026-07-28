@@ -15,7 +15,7 @@ import os
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 
-from . import reference
+from . import features, reference
 from .baseline import calcular_todas, tabla_comparativa
 from .threshold import curva_operacion, punto_de_saturacion, recomendar
 
@@ -66,11 +66,11 @@ def main(argv: list[str] | None = None) -> int:
     train = pd.read_csv(ruta_train)
     valid = pd.read_csv(ruta_valid)
 
-    modelo, columnas = reference.entrenar(train)
-    scores = reference.puntuar(modelo, columnas, valid)
-    auc = roc_auc_score(valid[reference.OBJETIVO], scores)
+    modelo = reference.entrenar(train)
+    scores = reference.puntuar(modelo, valid)
+    auc = roc_auc_score(valid[features.OBJETIVO], scores)
 
-    print(f"Validación: {len(valid)} filas, {int(valid[reference.OBJETIVO].sum())} "
+    print(f"Validación: {len(valid)} filas, {int(valid[features.OBJETIVO].sum())} "
           f"positivos, {valid['fecha'].min()} a {valid['fecha'].max()}")
     print(f"AUC del modelo de referencia: {auc:.3f}  "
           f"(AutoML alcanzó 0.843 con un ensamble de seis modelos)\n")
