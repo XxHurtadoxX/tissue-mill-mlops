@@ -22,7 +22,25 @@ queda reservado para medir con cuánta anticipación avisó el modelo.
 los días con el equipo en reparación se descartan (si se dejaran, el modelo
 aprendería a reconocer paradas que ya ocurrieron en vez de anticiparlas) y las
 lecturas sucias se eliminan antes de promediar. Cada una de estas guardas tiene
-su prueba en ``tests/test_features.py``.
+su prueba en ``tests/pipeline/test_features.py``.
+
+**Un intento que no funcionó, anotado para no repetirlo.** Se probó añadir tres
+familias de variables que comparan cada equipo contra sí mismo: el percentil del
+día dentro de su historia reciente, la desviación robusta respecto de su mediana
+de sesenta días, y la pendiente de treinta días. La idea venía de un hallazgo
+sólido, porque la variable más útil del conjunto es precisamente un cociente
+contra la propia semana del equipo.
+
+Las tres empeoraron el modelo. Medido con cinco semillas para separar el efecto
+del ruido, el conjunto completo costó siete puntos de AUC y hasta la mejor de
+ellas costó uno y medio. La explicación es el tamaño del problema: hay
+veinticuatro eventos de falla en el conjunto de entrenamiento, y cada columna
+añadida diluye esa señal más de lo que aporta.
+
+Vale la pena registrar también el error de método. Una primera medición con una
+sola semilla sugirió que una de las familias mantenía el AUC y mejoraba la
+anticipación en dos días. Al repetirla con cinco semillas, esa mejora resultó
+estar dentro del ruido y el costo en AUC era real.
 """
 from __future__ import annotations
 
