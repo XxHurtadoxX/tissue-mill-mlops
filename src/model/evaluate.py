@@ -183,6 +183,67 @@ def auc_intra_promedio(df: pd.DataFrame, scores: np.ndarray) -> float:
     return float(np.mean(list(por_equipo.values()))) if por_equipo else np.nan
 
 
+# Tolerancia al cruzar los eventos detectados con el registro de fallas reales.
+# La ventana de la etiqueta termina el día de la orden correctiva, pero el aviso
+# puede quedar registrado con unas horas de desfase.
+DIAS_TOLERANCIA_CRUCE = 3
+
+
+def recall_contra_techo(df: pd.DataFrame, scores: np.ndarray, umbral: float,
+                        ground_truth: pd.DataFrame) -> dict:
+    """Separa los eventos que el modelo podía anticipar de los que no.
+
+    Una de cada cuatro fallas ocurre sin dejar rastro en los sensores: un golpe,
+    una fractura súbita. Ningún modelo puede anticiparlas, así que contarlas
+    entre los fracasos subvende el sistema y, peor, sugiere que hay margen de
+    mejora donde no lo hay.
+
+    La diferencia no es menor. En el conjunto de validación de este proyecto hay
+    nueve eventos, de los cuales cuatro son silenciosos. Reportar "cuatro de
+    nueve" describe un modelo mediocre; reportar "cuatro de cuatro detectables,
+    más cuatro fallas sin precursor" describe uno que llegó al techo.
+
+    En una planta real esta separación no se puede hacer con esta precisión,
+    porque nadie sabe con certeza cuáles fallas tuvieron precursor. Se aproxima
+    revisando con los técnicos los eventos no detectados, uno por uno, que es
+    justamente la conversación que conviene tener.
+    """
+    trabajo = df[["equipo_code", "fecha", "falla_14d"]].copy()
+    trabajo["evento"] = identificar_eventos(trabajo)
+    trabajo["alerta"] = np.asarray(scores, dtype=float) >= umbral
+
+    eventos = trabajo.dropna(subset=["evento"])
+    resumen = eventos.groupby(["equipo_code", "evento"]).agg(
+        alerta=("alerta", "any"), fin=("fecha", "max")).reset_index()
+
+    verdad = ground_truth[ground_truth["fuente"] == "historian"].copy()
+    verdad["fecha_falla"] = pd.to_datetime(verdad["fecha_falla"])
+
+    detectables = detectados = silenciosos = silenciosos_detectados = 0
+    for fila in resumen.itertuples(index=False):
+        cercanos = verdad[
+            (verdad["code"] == fila.equipo_code)
+            & ((verdad["fecha_falla"] - pd.Timestamp(fila.fin)).abs().dt.days
+               <= DIAS_TOLERANCIA_CRUCE)
+        ]
+        if cercanos.empty:
+            continue
+        if int(cercanos["silenciosa"].max()) == 1:
+            silenciosos += 1
+            silenciosos_detectados += int(fila.alerta)
+        else:
+            detectables += 1
+            detectados += int(fila.alerta)
+
+    return {
+        "eventos_detectables": detectables,
+        "detectables_anticipados": detectados,
+        "recall_sobre_techo": detectados / detectables if detectables else np.nan,
+        "eventos_silenciosos": silenciosos,
+        "silenciosos_anticipados": silenciosos_detectados,
+    }
+
+
 # Costos de referencia, en dólares, tomados del caso de negocio.
 #
 # Es tentador expresarlo todo en horas para no depender de precios, y es un
