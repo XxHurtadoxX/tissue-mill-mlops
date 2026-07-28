@@ -1,0 +1,41 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+type: command
+
+experiment_name: tissue-falla-14d
+display_name: entrenamiento-propio
+description: >
+  Entrena el clasificador de falla a catorce días con el script del repositorio.
+  Reemplaza al modelo de AutoML por uno que se puede inspeccionar, versionar y
+  reentrenar, que es lo que necesitan las fases de despliegue y monitoreo.
+
+# Se sube el repositorio completo para que funcionen los imports relativos
+# entre src.model, src.features y src.simulator.
+code: ../..
+
+command: >-
+  python -m src.model.train
+  --train ${{inputs.train}}
+  --valid ${{inputs.valid}}
+  --ground-truth ${{inputs.ground_truth}}
+  --n-estimators 500
+  --max-features sqrt
+  --min-samples-leaf 1
+
+inputs:
+  train:
+    type: mltable
+    path: azureml:tissue-train-table:2
+  valid:
+    type: mltable
+    path: azureml:tissue-valid-table:2
+  ground_truth:
+    type: uri_file
+    path: azureml:tissue-ground-truth:1
+
+# Entorno curado de Azure ML, no uno propio. Definir un entorno personalizado
+# obligaría a construir una imagen, y eso crea un Container Registry con tarifa
+# diaria fija. Mientras las dependencias del curado alcancen, no hay motivo
+# para asumir ese costo.
+environment: azureml://registries/azureml/environments/sklearn-1.5/versions/50
+
+compute: azureml:cpu-cluster

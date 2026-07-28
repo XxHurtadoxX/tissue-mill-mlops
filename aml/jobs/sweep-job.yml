@@ -1,0 +1,102 @@
+$schema: https://azuremlschemas.azureedge.net/latest/sweepJob.schema.json
+type: sweep
+
+experiment_name: tissue-falla-14d
+display_name: busqueda-hiperparametros
+description: >
+  Búsqueda de hiperparámetros del clasificador. Una medición previa en local
+  indica que el margen es de una milésima de AUC, así que el valor de esta
+  corrida está en confirmarlo a escala y en dejar registrada la comparación,
+  no en esperar una mejora.
+
+# --------------------------------------------------------------------------- #
+# Muestreo
+# --------------------------------------------------------------------------- #
+# Tres opciones y por qué esta:
+#
+#   grid       Recorre todas las combinaciones, pero exige que cada parámetro
+#              sea discreto. Con tres parámetros el espacio ya se dispara.
+#   bayesian   Aprende de los intentos previos y converge con menos pruebas. Su
+#              limitación decide el asunto: NO admite políticas de terminación
+#              temprana, porque necesita que cada intento termine para aprender
+#              de él. Y aquí ese aprendizaje no compensa, porque un intento
+#              tarda medio segundo y lo caro es arrancar los nodos.
+#   random     Cubre bien el espacio, admite terminación temprana y no supone
+#              nada sobre la forma de la superficie.
+sampling_algorithm: random
+
+search_space:
+  n_estimators:
+    type: choice
+    values: [100, 200, 300, 500, 800, 1200]
+  max_features:
+    type: choice
+    values: ["sqrt", "log2", "None"]
+  min_samples_leaf:
+    # Rango logarítmico: la diferencia entre 1 y 2 importa mucho más que entre
+    # 30 y 40, y muestrear de forma lineal desperdiciaría intentos en el tramo
+    # alto donde el modelo apenas cambia.
+    type: qloguniform
+    min_value: 0
+    max_value: 3.7
+    q: 1
+
+# --------------------------------------------------------------------------- #
+# Objetivo
+# --------------------------------------------------------------------------- #
+# El nombre tiene que coincidir exactamente con el que registra el script en
+# METRICA_PRINCIPAL. Si no coincide, la búsqueda corre sin error, termina, y
+# devuelve los intentos sin ordenar porque no encontró ningún valor que
+# comparar. Es el fallo silencioso más común al empezar con sweeps.
+objective:
+  goal: maximize
+  primary_metric: auc_valid
+
+# --------------------------------------------------------------------------- #
+# Terminación temprana
+# --------------------------------------------------------------------------- #
+# Bandit compara cada intento contra el MEJOR hasta el momento y cancela los que
+# queden fuera del margen. Es la más agresiva, y la adecuada cuando se busca el
+# máximo y no un mapa del espacio.
+#
+# Las otras dos: median_stopping compara contra la mediana de los promedios
+# corridos, más permisiva; truncation_selection cancela un porcentaje fijo de
+# los peores en cada evaluación.
+early_termination:
+  type: bandit
+  slack_factor: 0.1
+  evaluation_interval: 2
+  delay_evaluation: 5
+
+limits:
+  max_total_trials: 40
+  # No conviene superar los nodos del clúster: los intentos extra esperarían en
+  # cola sin ganar nada.
+  max_concurrent_trials: 2
+  timeout: 2400
+  trial_timeout: 600
+
+trial:
+  code: ../..
+  command: >-
+    python -m src.model.train
+    --train ${{inputs.train}}
+    --valid ${{inputs.valid}}
+    --ground-truth ${{inputs.ground_truth}}
+    --n-estimators ${{search_space.n_estimators}}
+    --max-features ${{search_space.max_features}}
+    --min-samples-leaf ${{search_space.min_samples_leaf}}
+  environment: azureml://registries/azureml/environments/sklearn-1.5/versions/50
+
+inputs:
+  train:
+    type: mltable
+    path: azureml:tissue-train-table:2
+  valid:
+    type: mltable
+    path: azureml:tissue-valid-table:2
+  ground_truth:
+    type: uri_file
+    path: azureml:tissue-ground-truth:1
+
+compute: azureml:cpu-cluster

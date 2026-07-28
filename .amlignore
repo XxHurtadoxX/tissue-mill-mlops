@@ -1,0 +1,25 @@
+# Qué NO se sube a Azure Machine Learning al enviar un trabajo.
+#
+# Los trabajos declaran `code: ../..`, que empaqueta el repositorio completo
+# para que funcionen los imports entre módulos. Sin esta lista se subirían
+# también los datos, y en una búsqueda de cuarenta intentos ese sobrecosto de
+# transferencia se paga cuarenta veces.
+#
+# Los datos no hacen falta en el paquete de código: llegan por separado, como
+# entradas declaradas del trabajo y montadas desde el almacenamiento.
+
+workdir/
+data/
+mlruns/
+aml/workdir/
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+.git/
+.github/
+docs/
+tests/

@@ -90,11 +90,26 @@ def entrenar_y_evaluar(train: pd.DataFrame, valid: pd.DataFrame,
     return metricas
 
 
-def _leer(carpeta: str) -> pd.DataFrame:
-    ruta = os.path.join(carpeta, "training_table.csv")
-    if not os.path.exists(ruta):
-        raise SystemExit(f"No existe {ruta}.")
-    return pd.read_csv(ruta)
+def _leer(ruta: str) -> pd.DataFrame:
+    """Lee la tabla, ya venga como archivo o como carpeta montada por Azure.
+
+    Un input de tipo mltable llega montado como carpeta, con el descriptor y el
+    CSV dentro. Se lee el CSV directamente y no a través del descriptor, porque
+    este descarta las columnas de fecha y equipo, que la evaluación necesita
+    para agrupar los días en eventos de falla.
+    """
+    if os.path.isfile(ruta):
+        return pd.read_csv(ruta)
+
+    candidato = os.path.join(ruta, "training_table.csv")
+    if os.path.exists(candidato):
+        return pd.read_csv(candidato)
+
+    csvs = [f for f in os.listdir(ruta)] if os.path.isdir(ruta) else []
+    csvs = [f for f in csvs if f.endswith(".csv")]
+    if len(csvs) == 1:
+        return pd.read_csv(os.path.join(ruta, csvs[0]))
+    raise SystemExit(f"No se encontró una tabla en {ruta}.")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -107,9 +122,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output", default=None, help="Carpeta donde guardar el modelo.")
 
     # Hiperparámetros expuestos, que son los que recorrerá la búsqueda.
-    parser.add_argument("--n-estimators", type=int, default=500)
+    # Se leen como float y se convierten después: la búsqueda de
+    # hiperparámetros entrega valores como "9.0" incluso para parámetros
+    # enteros, y int("9.0") falla.
+    parser.add_argument("--n-estimators", type=float, default=500)
     parser.add_argument("--max-features", default="sqrt", choices=["sqrt", "log2", "None"])
-    parser.add_argument("--min-samples-leaf", type=int, default=1)
+    parser.add_argument("--min-samples-leaf", type=float, default=1)
     parser.add_argument("--random-state", type=int, default=0)
 
     parser.add_argument("--capacidad", type=int, default=8,
@@ -123,17 +141,20 @@ def main(argv: list[str] | None = None) -> int:
     train, valid = _leer(args.train), _leer(args.valid)
     verdad = pd.read_csv(args.ground_truth) if args.ground_truth else None
 
+    n_estimators = int(args.n_estimators)
+    min_samples_leaf = max(1, int(args.min_samples_leaf))
+
     modelo = construir_modelo(
-        n_estimators=args.n_estimators,
+        n_estimators=n_estimators,
         max_features=None if args.max_features == "None" else args.max_features,
-        min_samples_leaf=args.min_samples_leaf,
+        min_samples_leaf=min_samples_leaf,
         random_state=args.random_state,
     )
 
     mlflow.log_params({
-        "n_estimators": args.n_estimators,
+        "n_estimators": n_estimators,
         "max_features": args.max_features,
-        "min_samples_leaf": args.min_samples_leaf,
+        "min_samples_leaf": min_samples_leaf,
         "random_state": args.random_state,
         "n_variables": matriz(train).shape[1],
         "filas_entrenamiento": len(train),
