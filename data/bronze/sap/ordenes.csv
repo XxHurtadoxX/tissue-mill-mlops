@@ -3,3 +3,4 @@ aviso,tipo_aviso,orden,tipo_orden,ubicacion_tecnica,equipo,fecha_aviso,texto,hor
 18932028,M2,46206828,PM01,PLBQ-TIS1-CONV-BOBIN-RED,10004560,2026-06-26 13:00,RED1 vibra raro se calienta el rodamiento,7.3,rodamiento SKF 22320
 17937418,M2,41479394,PM01,PLBQ-TIS1-PREP-AGIT02,10004522,2026-07-06 05:00,AG2 vibra raro se calienta el rodamiento,9.6,rodamiento SKF 22320
 14615679,M2,43350203,PM01,PLBQ-TIS1-VACIO-BOMB02,10004532,2026-07-10 05:00,"ruido y vibracion en Bomba de vacio 2, revisar urgente",14.0,rodamiento SKF 22320
+12752783,M1,40323969,PM03,PLBQ-TIS1-PREP-PULP01,10004511,2026-07-31 00:00,"envio de rotor P1 a taller por desgaste, lotes lentos",24.0,recuperacion de alabes + balanceo

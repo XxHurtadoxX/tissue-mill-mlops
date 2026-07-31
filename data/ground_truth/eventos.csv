@@ -3,3 +3,4 @@ BV2-2026-06-02,BV2,10004532,Bomba de vacio 2,Desgaste de rodamiento,2026-05-08,2
 RED1-2026-06-26,RED1,10004560,Reductor bobinadora,Desgaste de rodamiento,2026-05-06,2026-06-26,historian,0
 AG2-2026-07-06,AG2,10004522,Agitador tina 2,Desgaste de rodamiento,2026-05-24,2026-07-06,historian,0
 BV2-2026-07-10,BV2,10004532,Bomba de vacio 2,Desgaste de rodamiento,2026-06-12,2026-07-10,historian,1
+P1-rotor-2026-07-31,P1,10004511,Motor pulper 1,Desgaste de rotor de pulper,2026-06-01,2026-07-31,batches,0
