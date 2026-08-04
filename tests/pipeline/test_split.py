@@ -7,7 +7,7 @@ from datetime import date, timedelta
 
 import pandas as pd
 
-from src.features.split import partir
+from src.features.split import calcular_cortes, partir
 
 
 def _tabla(n_dias=100, inicio=date(2024, 1, 1)):
@@ -57,3 +57,35 @@ def test_los_dos_equipos_aparecen_en_cada_conjunto():
     partes = partir(_tabla(), "2024-02-01", "2024-03-01")
     for sub in partes.values():
         assert set(sub["equipo_code"]) == {"BV1", "BV2"}
+
+
+# --------------------------------------------------------------------------- #
+# Cortes relativos al último día con datos
+# --------------------------------------------------------------------------- #
+def test_los_cortes_se_miden_desde_el_ultimo_dia_con_datos():
+    """Con cortes fijos, el conjunto de prueba envejecería en cada reentrenamiento."""
+    df = _tabla(n_dias=400, inicio=date(2024, 1, 1))
+    corte_train, corte_valid = calcular_cortes(df, dias_valid=100, dias_test=50)
+    ultimo = df["fecha"].max()
+    assert corte_valid == (date.fromisoformat(ultimo) - timedelta(days=50)).isoformat()
+    assert corte_train == (date.fromisoformat(ultimo) - timedelta(days=150)).isoformat()
+
+
+def test_sin_cortes_explicitos_se_usan_los_relativos():
+    df = _tabla(n_dias=400)
+    partes = partir(df)
+    assert not partes["test"].empty
+    assert partes["train"]["fecha"].max() < partes["valid"]["fecha"].min()
+
+
+def test_la_prueba_siempre_es_el_periodo_mas_reciente():
+    df = _tabla(n_dias=400)
+    partes = partir(df)
+    assert partes["test"]["fecha"].max() == df["fecha"].max()
+
+
+def test_los_cortes_explicitos_anulan_las_ventanas_relativas():
+    """Sirve para reproducir una partición histórica exacta."""
+    df = _tabla(n_dias=400)
+    partes = partir(df, "2024-02-01", "2024-03-01")
+    assert partes["train"]["fecha"].max() == "2024-02-01"
