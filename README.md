@@ -19,6 +19,19 @@ Este proyecto predice esas fallas con días de anticipación para que la interve
 
 Un dato que resume el problema: sobre 37 eventos de falla en dos años y medio, **la ruta mensual de vibración que se usa hoy anticipa uno**. No porque la norma esté mal, sino porque una medición al mes no alcanza a atrapar una degradación que se desarrolla en cuatro semanas.
 
+## Resultado
+
+Medido sobre cinco meses de datos que el modelo nunca vio, y que no intervinieron en ninguna decisión de diseño:
+
+| | Modelo | Práctica actual |
+|---|---|---|
+| AUC | 0.915 | — |
+| Fallas con precursor anticipadas | **4 de 5** | 0 de 5 |
+| Anticipación mediana | 5.5 días | — |
+| Inspecciones generadas al mes | 8 | 1 ruta mensual |
+
+Una de cada cuatro fallas ocurre sin dejar rastro en los sensores, por un golpe o una fractura súbita. Esas son indetectables por cualquier método, así que el desempeño se reporta contra las que sí tenían precursor. Distinguirlas es lo que separa una cifra honesta de una que subvende el sistema.
+
 ## El simulador de datos
 
 Antes de llegar al modelo, el proyecto resuelve un problema previo: generar datos de planta que se comporten como datos de planta reales, con su suciedad incluida. No encontré un generador open-source en español que simulara historian, órdenes de mantenimiento y rutas de vibración con ese nivel de detalle, así que lo construí para este proyecto. Cubre cinco fuentes:
@@ -108,8 +121,8 @@ El simulador (Fase 0) es la base sobre la que se construye el resto del ciclo de
 
 - [x] **Fase 0 (datos)**: simulador determinista, CI y generación diaria automática
 - [x] **Fase 1 (infraestructura)**: workspace y cómputo declarados en YAML, tabla de entrenamiento y tres data assets versionados
-- [x] **Fase 2 (exploración)**: líneas base medidas, AutoML, y el umbral elegido según la capacidad de inspección *(estás aquí)*
-- [ ] **Fase 3**: entrenamiento propio como job parametrizado + búsqueda de hiperparámetros
+- [x] **Fase 2 (exploración)**: líneas base medidas, AutoML, y el umbral elegido según la capacidad de inspección
+- [x] **Fase 3 (modelo)**: entrenamiento propio parametrizado, búsqueda de hiperparámetros y evaluación final sobre datos nunca vistos *(estás aquí)*
 - [ ] **Fase 4**: pipeline de componentes reutilizables (preparación → features → entrenamiento → evaluación)
 - [ ] **Fase 5**: integración continua con GitHub Actions (service principal, trunk-based development)
 - [ ] **Fase 6**: entornos dev/prod con aprobación manual y despliegue blue/green
