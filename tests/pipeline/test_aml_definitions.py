@@ -39,19 +39,45 @@ def test_el_yaml_es_valido(ruta):
     assert isinstance(contenido, dict), f"{ruta.name} no define un objeto"
 
 
+# Carpeta de trabajo local, que no se versiona porque el simulador la regenera.
+# Los assets de datos apuntan ahí, así que su existencia depende de si alguien
+# generó los datos en esa máquina y no puede comprobarse en un entorno limpio.
+CARPETA_LOCAL = "workdir"
+
+
 @pytest.mark.parametrize("ruta", ARCHIVOS, ids=lambda p: p.name)
-def test_las_rutas_relativas_existen(ruta):
-    """Un `path` o un `code` que apunte a la nada falla recién en la nube."""
+def test_las_referencias_al_repositorio_existen(ruta):
+    """Un `code` o un `conda_file` que apunte a la nada falla recién en la nube.
+
+    No se comprueban los `path` de los assets de datos: apuntan a la carpeta de
+    trabajo, que no está versionada porque el simulador la reconstruye. Exigir
+    su existencia haría que la prueba pasara en la máquina de quien generó los
+    datos y fallara en cualquier otra, que es justo lo contrario de lo que debe
+    hacer una prueba.
+    """
     contenido = _cargar(ruta)
-    for clave in ("path", "code", "conda_file", "create_job"):
+    for clave in ("code", "conda_file", "create_job"):
         valor = contenido.get(clave)
-        if not isinstance(valor, str):
-            continue
-        # Las referencias a assets del workspace no son rutas de disco.
-        if valor.startswith(("azureml:", "azureml://", "http")):
+        if not isinstance(valor, str) or valor.startswith(("azureml:", "http")):
             continue
         assert (ruta.parent / valor).exists(), (
             f"{ruta.name} declara {clave}: {valor}, que no existe")
+
+
+@pytest.mark.parametrize("ruta", ARCHIVOS, ids=lambda p: p.name)
+def test_los_assets_de_datos_apuntan_a_la_carpeta_de_trabajo(ruta):
+    """Verifica la convención, ya que no se puede verificar la existencia.
+
+    Si un asset apuntara a una ruta fuera de la carpeta de trabajo, sería señal
+    de que alguien enlazó datos de su propia máquina y el registro fallaría para
+    cualquier otra persona.
+    """
+    valor = _cargar(ruta).get("path")
+    if not isinstance(valor, str) or valor.startswith(("azureml:", "http")):
+        return
+    assert CARPETA_LOCAL in valor, (
+        f"{ruta.name} declara path: {valor}, fuera de {CARPETA_LOCAL}/. "
+        f"Los datos deben salir del simulador, no de una ruta personal.")
 
 
 def test_el_sweep_busca_la_metrica_que_el_script_registra():

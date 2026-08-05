@@ -57,7 +57,9 @@ Una planta real genera datos todos los días, así que el repositorio también l
 ```bash
 git clone https://github.com/XxHurtadoxX/tissue-mill-mlops.git
 cd tissue-mill-mlops
-pip install -r requirements-dev.txt
+pip install -r requirements-dev.txt      # desarrollo y pruebas
+# pip install -r requirements-local.txt  # añade el conector para registrar
+#                                        # experimentos en el workspace
 ```
 
 El repositorio ya trae una muestra de datos en `data/`, así que se puede explorar sin generar nada. Para reconstruir el histórico completo y armar la tabla de entrenamiento:

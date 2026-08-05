@@ -1,14 +1,15 @@
 -r requirements.txt
 
-# Herramientas de calidad que corre la CI en cada pull request.
+# Herramientas de calidad que corre la integración continua en cada cambio.
 flake8==7.1.1
 pytest==8.3.4
-# Para validar las definiciones YAML de Azure en cada cambio.
+# Para validar las definiciones YAML de Azure.
 pyyaml==6.0.2
 
-# Modelado y seguimiento de experimentos. Solo hacen falta para trabajar en
-# local: los trabajos que corren dentro de Azure Machine Learning ya traen su
-# propio entorno, y el workflow que genera datos a diario no usa nada de esto.
+# Modelado. Las pruebas importan estos módulos, así que la integración continua
+# los necesita.
 scikit-learn==1.6.1
-mlflow==3.14.0
-azureml-mlflow>=1.62.0
+# La versión está fijada por compatibilidad con azureml-mlflow, que exige
+# mlflow-skinny<=3.13.0. Subir mlflow aquí rompe la instalación del entorno de
+# trabajo local, que sí instala ese conector.
+mlflow==3.13.0

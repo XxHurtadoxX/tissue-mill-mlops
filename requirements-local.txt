@@ -1,0 +1,13 @@
+-r requirements-dev.txt
+
+# Conector para registrar experimentos desde esta máquina hacia el workspace de
+# Azure Machine Learning, que actúa como servidor de seguimiento de MLflow.
+#
+# Va aparte de las dependencias de desarrollo a propósito. La integración
+# continua no lo necesita, porque no habla con Azure, y arrastrarlo allá
+# rompería la instalación: exige mlflow-skinny<=3.13.0, y cualquier versión de
+# mlflow por encima de esa entra en conflicto.
+#
+# Ese conflicto tumbó la integración continua durante varios días sin que nadie
+# lo notara, porque nadie miraba el resultado de las ejecuciones.
+azureml-mlflow>=1.62.0
