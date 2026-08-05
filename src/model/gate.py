@@ -32,7 +32,6 @@ import argparse
 import json
 import os
 
-import mlflow
 import numpy as np
 import pandas as pd
 
@@ -142,6 +141,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Ver la nota sobre esta importación diferida en src/model/train.py.
+    import mlflow
+    import mlflow.sklearn
+
     args = build_parser().parse_args(argv)
 
     datos = _leer(args.test)

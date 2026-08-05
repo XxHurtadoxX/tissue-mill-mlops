@@ -6,10 +6,5 @@ pytest==8.3.4
 # Para validar las definiciones YAML de Azure.
 pyyaml==6.0.2
 
-# Modelado. Las pruebas importan estos módulos, así que la integración continua
-# los necesita.
+# Necesario porque las métricas de evaluación lo usan.
 scikit-learn==1.6.1
-# La versión está fijada por compatibilidad con azureml-mlflow, que exige
-# mlflow-skinny<=3.13.0. Subir mlflow aquí rompe la instalación del entorno de
-# trabajo local, que sí instala ese conector.
-mlflow==3.13.0

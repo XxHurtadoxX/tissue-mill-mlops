@@ -1,13 +1,18 @@
 -r requirements-dev.txt
 
+# Seguimiento de experimentos y guardado de modelos. Va aparte de las
+# dependencias de desarrollo por una razón práctica: MLflow arrastra una
+# veintena de paquetes, entre ellos Flask, gunicorn, docker y matplotlib, y
+# dominaba el tiempo de instalación de la integración continua.
+#
+# Las pruebas no lo necesitan. Solo usan constantes y lógica pura de los módulos
+# que lo importan, así que esas importaciones se hacen dentro de las funciones
+# que de verdad lo utilizan y no al cargar el módulo.
+#
+# La versión está fijada por el conector de Azure, que exige mlflow-skinny
+# hasta la 3.13.0. Subirla rompe la instalación.
+mlflow==3.13.0
+
 # Conector para registrar experimentos desde esta máquina hacia el workspace de
 # Azure Machine Learning, que actúa como servidor de seguimiento de MLflow.
-#
-# Va aparte de las dependencias de desarrollo a propósito. La integración
-# continua no lo necesita, porque no habla con Azure, y arrastrarlo allá
-# rompería la instalación: exige mlflow-skinny<=3.13.0, y cualquier versión de
-# mlflow por encima de esa entra en conflicto.
-#
-# Ese conflicto tumbó la integración continua durante varios días sin que nadie
-# lo notara, porque nadie miraba el resultado de las ejecuciones.
 azureml-mlflow>=1.62.0
