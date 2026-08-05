@@ -122,8 +122,8 @@ El simulador (Fase 0) es la base sobre la que se construye el resto del ciclo de
 - [x] **Fase 0 (datos)**: simulador determinista, CI y generación diaria automática
 - [x] **Fase 1 (infraestructura)**: workspace y cómputo declarados en YAML, tabla de entrenamiento y tres data assets versionados
 - [x] **Fase 2 (exploración)**: líneas base medidas, AutoML, y el umbral elegido según la capacidad de inspección
-- [x] **Fase 3 (modelo)**: entrenamiento propio parametrizado, búsqueda de hiperparámetros y evaluación final sobre datos nunca vistos *(estás aquí)*
-- [ ] **Fase 4**: pipeline de componentes reutilizables (preparación → features → entrenamiento → evaluación)
+- [x] **Fase 3 (modelo)**: entrenamiento propio parametrizado, búsqueda de hiperparámetros y evaluación final sobre datos nunca vistos
+- [x] **Fase 4 (automatización)**: pipeline de componentes con reentrenamiento programado y registro condicional del modelo *(estás aquí)*
 - [ ] **Fase 5**: integración continua con GitHub Actions (service principal, trunk-based development)
 - [ ] **Fase 6**: entornos dev/prod con aprobación manual y despliegue blue/green
 - [ ] **Fase 7**: monitoreo de data drift en producción
