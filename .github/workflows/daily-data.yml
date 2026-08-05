@@ -1,28 +1,35 @@
-name: Extracto diario de planta
+name: Verificar la generación diaria
 
-# Simula la operación real: la planta genera datos todos los días. Este cron
-# genera el "extracto del historian" del día (en UTC) y lo commitea al repo,
-# igual que un job de ingesta que corre cada madrugada.
+# Simula la operación de la planta: cada día se genera el extracto del historian
+# correspondiente a esa fecha y se comprueba que el simulador sigue produciendo
+# datos válidos.
 #
-# Notas de realismo/GitHub:
-#   * El cron usa hora UTC y puede retrasarse unos minutos en horas pico.
-#   * GitHub suspende los cron si el repo no tiene actividad en 60 días; basta
-#     con volver a habilitarlos desde la pestaña Actions.
+# **Por qué ya no se commitea.** Hasta el 5 de agosto de 2026 este workflow
+# subía el extracto al repositorio, y el historial conserva más de sesenta de
+# esos commits, que es evidencia suficiente del patrón de ingesta continua.
+#
+# Al proteger la rama principal, ese push quedó bloqueado, y con razón: la regla
+# existe para que nada entre sin pasar las verificaciones. Las salidas eran
+# guardar un token de larga duración o registrar una aplicación propia, y
+# ninguna se justifica para seguir acumulando datos que el simulador regenera
+# con un comando.
+#
+# El extracto se publica como artefacto de la ejecución, así que sigue
+# disponible sin tocar la rama.
 on:
   schedule:
     - cron: "0 6 * * *"   # 06:00 UTC todos los días
-  workflow_dispatch:       # permite dispararlo a mano desde la pestaña Actions
+  workflow_dispatch:
 
-# El job necesita permiso de escritura para poder commitear los datos nuevos.
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: daily-data
+  group: verificacion-diaria
   cancel-in-progress: false
 
 jobs:
-  generate:
+  generar:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,43 +39,21 @@ jobs:
           python-version: "3.11"
 
       - name: Generar el extracto de hoy (UTC)
-        run: python -m src.simulator.generate --date "$(date -u +%F)"
+        run: python -m src.simulator.generate --date "$(date -u +%F)" --out extracto
 
-      # La muestra versionada se mantiene en una ventana móvil. Sin esto el
-      # repositorio crecería sin límite, y para mostrar que la ingesta funciona
-      # basta con los últimos meses: el histórico completo se regenera cuando
-      # se necesita, porque el simulador es determinista.
-      - name: Podar los extractos más viejos que la ventana
-        env:
-          RETENCION_DIAS: "120"
+      # La generación es determinista: el mismo día y la misma semilla producen
+      # el mismo archivo. Si esto falla, alguien cambió el simulador sin darse
+      # cuenta de que rompía la reproducibilidad del histórico.
+      - name: Comprobar que la generación es reproducible
         run: |
-          corte=$(date -u -d "-${RETENCION_DIAS} days" +%F)
-          echo "Conservando extractos desde $corte en adelante."
-          podados=0
-          for f in data/bronze/historian/*.csv; do
-            dia=$(basename "$f" .csv)
-            if [[ "$dia" < "$corte" ]]; then
-              git rm -q --ignore-unmatch "$f"
-              podados=$((podados + 1))
-            fi
-          done
-          for f in data/bronze/produccion/batches_*.csv; do
-            dia=$(basename "$f" .csv)
-            if [[ "${dia#batches_}" < "$corte" ]]; then
-              git rm -q --ignore-unmatch "$f"
-              podados=$((podados + 1))
-            fi
-          done
-          echo "Extractos podados: $podados"
+          python -m src.simulator.generate --date "$(date -u +%F)" --out repeticion
+          hoy=$(date -u +%F)
+          diff "extracto/bronze/historian/$hoy.csv" "repeticion/bronze/historian/$hoy.csv"
+          echo "El extracto se reprodujo idéntico."
 
-      - name: Commit y push si hay datos nuevos
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/
-          if git diff --cached --quiet; then
-            echo "Sin datos nuevos para commitear."
-          else
-            git commit -m "data: extracto de planta $(date -u +%F)"
-            git push
-          fi
+      - name: Publicar el extracto como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: extracto-${{ github.run_id }}
+          path: extracto/
+          retention-days: 14

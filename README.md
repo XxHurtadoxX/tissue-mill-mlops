@@ -50,7 +50,9 @@ El simulador también está calibrado para que el problema conserve su dificulta
 
 ## Datos que llegan a diario
 
-Una planta real genera datos todos los días, así que el repositorio también lo hace. El workflow [`daily-data.yml`](.github/workflows/daily-data.yml) corre cada día a las 06:00 UTC, genera el extracto del historian correspondiente a esa fecha y lo commitea automáticamente, igual que correría un job de ingesta nocturno en producción. El dataset queda actualizado sin intervención manual.
+Una planta real genera datos todos los días, así que el repositorio también lo hace. El workflow [`daily-data.yml`](.github/workflows/daily-data.yml) corre cada día a las 06:00 UTC, genera el extracto del historian correspondiente a esa fecha y comprueba que se reproduzca idéntico al volver a generarlo, que es la garantía de que el histórico sigue siendo reconstruible.
+
+Durante el primer mes el workflow además commiteaba cada extracto, y el historial conserva más de sesenta de esos commits. Dejó de hacerlo al proteger la rama principal: un automatismo que escribe en `main` sin pasar por las verificaciones es justamente lo que esa protección impide, y las alternativas pasaban por guardar credenciales de larga duración. El extracto se publica ahora como artefacto de cada ejecución.
 
 ## Instalación y uso
 
@@ -83,7 +85,7 @@ pytest
 
 | Carpeta | Versionada | Qué contiene |
 |---|---|---|
-| `data/` | Sí | Muestra viva. El workflow programado escribe ahí el extracto de cada día y conserva una ventana móvil de 120 días |
+| `data/` | Sí | Muestra de 120 días, escrita por el workflow programado durante el primer mes del proyecto |
 | `workdir/` | No | Espacio de trabajo local: histórico completo y tabla de entrenamiento. Se regenera con los dos comandos de arriba |
 
 Ambas siguen el patrón medallón: los datos crudos entran como **bronze**, la limpieza produce **silver** y la tabla lista para entrenar es **gold**.
@@ -112,7 +114,7 @@ tissue-mill-mlops/
 ├── data/                    # muestra viva versionada (ver tabla de arriba)
 └── .github/workflows/
     ├── ci.yml                 lint y pruebas en cada cambio
-    └── daily-data.yml         extracto diario programado
+    └── daily-data.yml         verificación diaria del simulador
 ```
 
 El simulador no depende de librerías externas, de modo que el workflow diario corre sin instalar nada. Las dependencias de `requirements.txt` (pandas y numpy) solo hacen falta para construir la tabla de entrenamiento.
