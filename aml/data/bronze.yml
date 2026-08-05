@@ -1,0 +1,20 @@
+$schema: https://azuremlschemas.azureedge.net/latest/data.schema.json
+
+name: tissue-bronze
+version: 1
+type: uri_folder
+
+description: >
+  Capa bronze completa: extractos del historian, lotes de pulper, rutas de
+  vibración y órdenes de trabajo. Es la entrada del pipeline de reentrenamiento,
+  que reconstruye la tabla desde aquí en cada corrida.
+
+  Se registra la capa entera y no cada fuente por separado porque el paso de
+  preparación las cruza todas, y partirla en cuatro assets obligaría a declarar
+  cuatro entradas que siempre viajan juntas.
+
+tags:
+  capa: bronze
+  uso: entrada_del_pipeline
+
+path: ../../workdir/bronze

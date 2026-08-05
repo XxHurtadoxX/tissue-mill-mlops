@@ -1,0 +1,34 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+type: command
+
+name: tissue_split
+version: 1
+display_name: Partir en entrenamiento, validación y prueba
+description: >
+  Parte la tabla por fecha. Los cortes se calculan hacia atrás desde el último
+  día con datos, para que el conjunto de prueba no envejezca entre
+  reentrenamientos.
+
+inputs:
+  gold:
+    type: uri_folder
+  dias_valid:
+    type: integer
+    default: 150
+  dias_test:
+    type: integer
+    default: 150
+
+outputs:
+  splits:
+    type: uri_folder
+    description: Contiene train, valid, test y train_full.
+
+code: ../..
+command: >-
+  python -m src.features.split
+  --tabla ${{inputs.gold}}
+  --out ${{outputs.splits}}
+  --dias-valid ${{inputs.dias_valid}}
+  --dias-test ${{inputs.dias_test}}
+environment: azureml:tissue-training@latest

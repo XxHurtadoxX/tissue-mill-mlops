@@ -1,0 +1,59 @@
+$schema: https://azuremlschemas.azureedge.net/latest/pipelineJob.schema.json
+type: pipeline
+
+experiment_name: tissue-reentrenamiento
+display_name: reentrenamiento-completo
+description: >
+  Reconstruye la tabla desde los datos crudos, reparte por fecha, entrena y
+  decide si el modelo nuevo merece reemplazar al de producción.
+
+  El orden de los pasos no se declara en ninguna parte: se deduce del grafo. El
+  paso de partición consume lo que produce el de preparación, así que Azure sabe
+  que uno va después del otro sin que nadie lo escriba.
+
+settings:
+  # Cómputo por omisión de todo el pipeline. Cada paso podría declarar el suyo,
+  # que es lo que permitiría poner el entrenamiento en una máquina con GPU y la
+  # preparación en una barata. Aquí no hace falta: el trabajo pesado es leer
+  # CSV, no entrenar.
+  default_compute: azureml:cpu-cluster
+  # Reutiliza la salida de un paso si su código y sus entradas no cambiaron.
+  # Con datos que crecen a diario casi nunca aplica al primer paso, pero evita
+  # repetir el resto cuando solo se ajusta la compuerta.
+  force_rerun: false
+
+inputs:
+  bronze:
+    type: uri_folder
+    path: azureml:tissue-bronze@latest
+  ground_truth:
+    type: uri_file
+    path: azureml:tissue-ground-truth:1
+
+jobs:
+  preparar:
+    type: command
+    component: ../components/prep.yml
+    inputs:
+      bronze: ${{parent.inputs.bronze}}
+
+  partir:
+    type: command
+    component: ../components/split.yml
+    inputs:
+      gold: ${{parent.jobs.preparar.outputs.gold}}
+
+  entrenar:
+    type: command
+    component: ../components/train.yml
+    inputs:
+      splits: ${{parent.jobs.partir.outputs.splits}}
+      ground_truth: ${{parent.inputs.ground_truth}}
+
+  decidir:
+    type: command
+    component: ../components/gate.yml
+    inputs:
+      modelo: ${{parent.jobs.entrenar.outputs.modelo}}
+      splits: ${{parent.jobs.partir.outputs.splits}}
+      ground_truth: ${{parent.inputs.ground_truth}}

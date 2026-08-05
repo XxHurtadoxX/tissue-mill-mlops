@@ -1,0 +1,39 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+type: command
+
+name: tissue_gate
+version: 1
+display_name: Decidir si reemplazar el modelo de producción
+description: >
+  Compara el modelo recién entrenado con el que está registrado y decide si
+  merece sustituirlo. El criterio son los eventos con precursor anticipados, no
+  el AUC.
+
+inputs:
+  modelo:
+    type: uri_folder
+  splits:
+    type: uri_folder
+  ground_truth:
+    type: uri_file
+  modelo_produccion:
+    type: string
+    default: tissue-falla-14d
+  capacidad:
+    type: integer
+    default: 8
+
+outputs:
+  veredicto:
+    type: uri_folder
+
+code: ../..
+command: >-
+  python -m src.model.gate
+  --modelo ${{inputs.modelo}}/model
+  --test ${{inputs.splits}}/test
+  --ground-truth ${{inputs.ground_truth}}
+  --modelo-produccion ${{inputs.modelo_produccion}}
+  --capacidad ${{inputs.capacidad}}
+  --salida ${{outputs.veredicto}}/veredicto.json
+environment: azureml:tissue-training@latest

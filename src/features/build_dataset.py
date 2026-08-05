@@ -103,9 +103,20 @@ def equipment_frame() -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def raiz_bronze(data_dir: str) -> str:
+    """Acepta tanto la carpeta que contiene ``bronze/`` como ``bronze/`` misma.
+
+    En local se trabaja sobre la carpeta padre, pero un componente del pipeline
+    recibe montada directamente la capa bronze, sin el nivel de arriba.
+    """
+    if os.path.isdir(os.path.join(data_dir, "bronze")):
+        return os.path.join(data_dir, "bronze")
+    return data_dir
+
+
 def load_historian(data_dir: str) -> pd.DataFrame:
     """Lee todos los extractos diarios del historian y los limpia."""
-    pattern = os.path.join(data_dir, "bronze", "historian", "*.csv")
+    pattern = os.path.join(raiz_bronze(data_dir), "historian", "*.csv")
     files = sorted(glob.glob(pattern))
     if not files:
         raise FileNotFoundError(f"No se encontraron extractos en {pattern}")
@@ -116,7 +127,7 @@ def load_historian(data_dir: str) -> pd.DataFrame:
 
 def load_production(data_dir: str) -> pd.DataFrame:
     """Carga diaria de la planta, en kilogramos procesados por los pulpers."""
-    pattern = os.path.join(data_dir, "bronze", "produccion", "batches_*.csv")
+    pattern = os.path.join(raiz_bronze(data_dir), "produccion", "batches_*.csv")
     files = sorted(glob.glob(pattern))
     if not files:
         return pd.DataFrame(columns=["fecha", "produccion_kg"])
@@ -128,7 +139,7 @@ def load_production(data_dir: str) -> pd.DataFrame:
 
 def load_routes(data_dir: str) -> pd.DataFrame:
     """Mediciones de la ruta de vibración mensual, por equipo."""
-    pattern = os.path.join(data_dir, "bronze", "rutas", "*.csv")
+    pattern = os.path.join(raiz_bronze(data_dir), "rutas", "*.csv")
     files = sorted(glob.glob(pattern))
     if not files:
         return pd.DataFrame(columns=["fecha", "equipo_code", "zona_iso_ord", "rms_ruta"])
@@ -147,7 +158,7 @@ def load_routes(data_dir: str) -> pd.DataFrame:
 
 def load_orders(data_dir: str) -> pd.DataFrame:
     """Órdenes de trabajo de SAP, que son la fuente de las etiquetas."""
-    path = os.path.join(data_dir, "bronze", "sap", "ordenes.csv")
+    path = os.path.join(raiz_bronze(data_dir), "sap", "ordenes.csv")
     if not os.path.exists(path):
         return pd.DataFrame(columns=["equipo_code", "fecha_orden", "tipo_orden"])
     raw = pd.read_csv(path)

@@ -1,0 +1,26 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+type: command
+
+name: tissue_prep
+version: 1
+display_name: Preparar la tabla de entrenamiento
+description: >
+  Limpia las lecturas del historian, calcula las ventanas móviles y cruza el
+  contexto de mantenimiento para producir la tabla de la capa gold.
+
+inputs:
+  bronze:
+    type: uri_folder
+    description: Capa bronze completa con historian, lotes, rutas y ordenes.
+
+outputs:
+  gold:
+    type: uri_folder
+    description: Tabla de entrenamiento con su descriptor MLTable.
+
+code: ../..
+command: >-
+  python -m src.features.build_dataset
+  --data ${{inputs.bronze}}
+  --out ${{outputs.gold}}
+environment: azureml:tissue-training@latest
