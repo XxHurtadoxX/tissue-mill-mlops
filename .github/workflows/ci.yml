@@ -19,11 +19,24 @@ jobs:
         with:
           python-version: "3.11"
 
+      # Cachea las dependencias entre ejecuciones. Instalar el entorno completo
+      # toma más tiempo que correr las pruebas, así que sin caché la espera de
+      # cada pull request la domina la descarga.
+      - name: Cachear dependencias
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('requirements*.txt') }}
+
       - name: Instalar herramientas de calidad
         run: pip install -r requirements-dev.txt
 
       - name: Lint (flake8)
         run: flake8 src tests
 
+      # Cubre tres cosas: la lógica del simulador, las guardas contra fuga de
+      # información del pipeline de datos, y la validez de las definiciones YAML
+      # de Azure. Estas últimas evitan descubrir en la nube, y pagando cómputo,
+      # errores que se ven en milisegundos.
       - name: Tests (pytest)
         run: pytest

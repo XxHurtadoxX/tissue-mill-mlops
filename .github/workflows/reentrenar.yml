@@ -1,0 +1,66 @@
+name: Reentrenar al fusionar
+
+# Se dispara cuando entra a la rama principal un cambio que puede afectar al
+# modelo, y solo entonces.
+#
+# El filtro de rutas es la parte importante. Sin él, cada corrección de una coma
+# en el README lanzaría un reentrenamiento y costaría dinero. También evita el
+# bucle clásico: el workflow que genera datos a diario commitea en `data/`, que
+# no está en esta lista, así que sus commits no disparan nada.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'aml/**'
+      - '.github/workflows/reentrenar.yml'
+  # Permite lanzarlo a mano desde la pestaña Actions, útil para probar sin
+  # tener que fabricar un cambio de código.
+  workflow_dispatch:
+
+# Evita que dos reentrenamientos corran a la vez si entran cambios seguidos.
+# El nuevo cancela al anterior, que ya quedó obsoleto.
+concurrency:
+  group: reentrenamiento
+  cancel-in-progress: true
+
+env:
+  GRUPO: rg-tissue-mlops
+  WORKSPACE: mlw-tissue-mlops
+
+jobs:
+  reentrenar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # El secreto contiene las credenciales del service principal, con permiso
+      # de Contributor acotado al grupo de recursos y no a la suscripción.
+      # Nunca aparece en el repositorio ni en los registros: GitHub lo enmascara.
+      - name: Autenticarse en Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Instalar la extensión de Machine Learning
+        run: az extension add -n ml -y
+
+      # Se envía con --stream para que el workflow siga el trabajo hasta el
+      # final. Enviarlo y desentenderse reportaría éxito aunque el pipeline
+      # fallara diez minutos después, que es peor que no tener workflow.
+      - name: Lanzar el pipeline de reentrenamiento
+        run: |
+          az ml job create \
+            --file aml/jobs/pipeline-job.yml \
+            --resource-group "$GRUPO" \
+            --workspace-name "$WORKSPACE" \
+            --stream
+
+      # La compuerta decide si el modelo nuevo reemplaza al de producción, y
+      # conservar el actual es un desenlace legítimo. Este paso solo deja el
+      # veredicto a la vista de quien mire la ejecución.
+      - name: Recordar cómo consultar el veredicto
+        if: always()
+        run: |
+          echo "El paso 'decidir' del pipeline registró si el modelo se sustituyó."
+          echo "Consultar en el estudio, experimento tissue-reentrenamiento."

@@ -3,6 +3,8 @@
 # Herramientas de calidad que corre la CI en cada pull request.
 flake8==7.1.1
 pytest==8.3.4
+# Para validar las definiciones YAML de Azure en cada cambio.
+pyyaml==6.0.2
 
 # Modelado y seguimiento de experimentos. Solo hacen falta para trabajar en
 # local: los trabajos que corren dentro de Azure Machine Learning ya traen su
