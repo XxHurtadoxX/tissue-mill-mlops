@@ -24,8 +24,6 @@ import argparse
 import os
 import shutil
 
-import mlflow
-import mlflow.sklearn
 import pandas as pd
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.impute import SimpleImputer
@@ -132,6 +130,13 @@ def guardar_modelo(modelo: Pipeline, destino: str | None = None) -> str:
     asociado a la corrida y facilita compararlo en el estudio. Si el backend no
     lo admite, no debe tumbar el entrenamiento: el modelo ya está a salvo.
     """
+    # MLflow se importa aquí y no arriba a propósito. Arrastra una veintena de
+    # dependencias, incluidas Flask, gunicorn y docker, y las pruebas de este
+    # módulo no lo necesitan: solo usan constantes y lógica pura. Cargarlo al
+    # importar obligaría a la integración continua a instalarlo en cada cambio,
+    # aunque el cambio sea una línea de documentación.
+    import mlflow.sklearn
+
     ruta = os.path.join(destino or CARPETA_SALIDA_AML, "model")
     os.makedirs(os.path.dirname(ruta) or ".", exist_ok=True)
     if os.path.exists(ruta):
@@ -170,6 +175,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    import mlflow
+
     args = build_parser().parse_args(argv)
 
     train, valid = _leer(args.train), _leer(args.valid)

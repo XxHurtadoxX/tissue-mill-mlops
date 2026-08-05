@@ -15,18 +15,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # El caché de pip viene incorporado en esta acción y se invalida solo
+      # cuando cambian los archivos de dependencias.
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      # Cachea las dependencias entre ejecuciones. Instalar el entorno completo
-      # toma más tiempo que correr las pruebas, así que sin caché la espera de
-      # cada pull request la domina la descarga.
-      - name: Cachear dependencias
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: pip-${{ runner.os }}-${{ hashFiles('requirements*.txt') }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
 
       - name: Instalar herramientas de calidad
         run: pip install -r requirements-dev.txt
