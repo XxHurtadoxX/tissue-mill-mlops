@@ -1,0 +1,19 @@
+$schema: https://azuremlschemas.azureedge.net/latest/schedule.schema.json
+
+name: reentrenamiento-mensual
+display_name: Reentrenamiento mensual
+description: >
+  Ejecuta el pipeline completo el primer día de cada mes.
+
+  El ritmo lo marca la llegada de eventos de falla, no la de datos. Entran unos
+  quince eventos al año, así que en un mes el conjunto de entrenamiento crece
+  alrededor de uno. Reentrenar cada semana gastaría cómputo para reajustar sobre
+  prácticamente los mismos datos.
+
+trigger:
+  type: cron
+  # Minuto 0, hora 6, día 1 de cada mes, cualquier día de la semana.
+  expression: "0 6 1 * *"
+  time_zone: UTC
+
+create_job: ../jobs/pipeline-job.yml
