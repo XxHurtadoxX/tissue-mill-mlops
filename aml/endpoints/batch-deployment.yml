@@ -1,0 +1,36 @@
+$schema: https://azuremlschemas.azureedge.net/latest/batchDeployment.schema.json
+
+name: produccion
+endpoint_name: tissue-falla-14d-lotes
+description: >
+  Versión del modelo que atiende hoy. Bajo un mismo endpoint pueden convivir
+  varios despliegues con uno marcado como predeterminado: liberar una versión
+  nueva es cambiar cuál lo es, y volver atrás es cambiarlo de vuelta, sin
+  redesplegar nada.
+
+# El modelo está en formato MLflow, así que no hace falta script de puntuación
+# ni entorno: Azure los deduce del empaquetado, que incluye la firma de entrada
+# y las dependencias.
+model: azureml:tissue-falla-14d:1
+
+# Aquí está el ahorro. Se usa el clúster que ya existe, y como tiene mínimo cero
+# nodos, al terminar el trabajo se apaga solo. Un endpoint en línea, en cambio,
+# mantiene instancias dedicadas encendidas esperando peticiones que llegan una
+# vez al día.
+compute: azureml:cpu-cluster
+
+resources:
+  instance_count: 1
+
+# Con doce equipos el tamaño del lote es indiferente, pero el parámetro es el
+# que permite escalar: con miles de filas se reparten entre los nodos.
+mini_batch_size: 10
+max_concurrency_per_instance: 1
+retry_settings:
+  max_retries: 2
+  timeout: 300
+
+output_action: append_row
+output_file_name: predicciones.csv
+error_threshold: -1
+logging_level: info

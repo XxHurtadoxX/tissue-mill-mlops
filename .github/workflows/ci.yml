@@ -8,6 +8,14 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Disparador manual, desde la pestaña Actions.
+  #
+  # Está aquí por una razón concreta: GitHub puede perder el evento de un pull
+  # request y dejar el chequeo obligatorio esperando un estado que nunca llega.
+  # Cuando pasa, no hay nada roto y aun así la fusión queda bloqueada. Con esto
+  # se relanza a mano en vez de tener que empujar un commit vacío o cerrar y
+  # reabrir el pull request.
+  workflow_dispatch:
 
 jobs:
   quality:
