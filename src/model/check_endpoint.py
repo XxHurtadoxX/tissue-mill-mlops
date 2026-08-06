@@ -1,101 +1,102 @@
-"""Comprueba que la respuesta del endpoint tenga sentido.
+"""Comprueba que las predicciones del despliegue por lotes tengan sentido.
 
-Invocar un endpoint y ver que devuelve algo no prueba nada. Un modelo mal
-desplegado, con las columnas en otro orden o con el preprocesamiento perdido,
-también devuelve números con la forma correcta.
+Que un trabajo termine en éxito y deje un archivo no prueba nada. Un modelo mal
+empaquetado, con las columnas en otro orden o con el preprocesamiento perdido,
+también produce un archivo con la forma correcta y el contenido equivocado.
 
-Las comprobaciones son tres, de menor a mayor exigencia:
+Las comprobaciones van de menor a mayor exigencia:
 
-1. **Forma.** Tantas respuestas como filas se enviaron, y valores dentro del
-   rango que puede tomar una probabilidad.
-2. **Coherencia con el modelo local.** El mismo modelo, cargado desde el
-   registro, debe dar prácticamente lo mismo. Si difiere, algo se perdió en el
-   empaquetado o el orden de las columnas no coincide.
-3. **Sentido físico.** El caso que se sabe en ventana de falla debe puntuar más
-   alto que el que se sabe sano. Es la única de las tres que detecta un modelo
-   invertido, que es un error más común de lo que parece.
+1. **Forma.** Tantas predicciones como equipos se enviaron a puntuar.
+2. **Rango.** Valores dentro de lo que puede tomar una probabilidad.
+3. **Sentido.** El equipo que se sabe en ventana de falla debe puntuar por
+   encima de los que se saben sanos. Es la única que detecta un modelo invertido
+   o que perdió el preprocesamiento al empaquetarse, porque esos casos devuelven
+   números perfectamente válidos con el significado contrario.
 
 Uso::
 
-    python -m src.model.check_endpoint --respuesta respuesta.json
+    python -m src.model.check_endpoint --predicciones predicciones.csv
 """
 from __future__ import annotations
 
 import argparse
-import json
+import os
+
+import pandas as pd
 
 # Umbral operativo elegido en la fase de exploración, con el que el modelo
 # anticipa los eventos detectables dentro del presupuesto de inspecciones.
 UMBRAL_OPERACION = 0.4
 
 
-def verificar(peticion: dict, respuesta, esperado: list[int] | None = None) -> list[str]:
-    """Devuelve la lista de problemas encontrados. Vacía significa todo bien."""
+def cargar_predicciones(ruta: str) -> pd.Series:
+    """Lee la salida del trabajo por lotes, que no trae encabezado por omisión."""
+    if os.path.isdir(ruta):
+        candidatos = [f for f in os.listdir(ruta) if f.endswith(".csv")]
+        if len(candidatos) != 1:
+            raise SystemExit(f"Se esperaba un solo CSV en {ruta}, hay {len(candidatos)}.")
+        ruta = os.path.join(ruta, candidatos[0])
+
+    datos = pd.read_csv(ruta, header=None)
+    # La última columna es la predicción; las anteriores repiten la entrada.
+    return pd.to_numeric(datos.iloc[:, -1], errors="coerce")
+
+
+def verificar(predicciones: pd.Series, identidad: pd.DataFrame) -> list[str]:
+    """Devuelve los problemas encontrados. Lista vacía significa todo bien."""
     problemas: list[str] = []
 
-    filas = len(peticion["input_data"]["data"])
-    valores = respuesta if isinstance(respuesta, list) else respuesta.get("predictions", [])
-
-    if len(valores) != filas:
+    if len(predicciones) != len(identidad):
         problemas.append(
-            f"Se enviaron {filas} filas y volvieron {len(valores)} respuestas.")
+            f"Se enviaron {len(identidad)} equipos y volvieron "
+            f"{len(predicciones)} predicciones.")
         return problemas
 
-    numeros = []
-    for i, v in enumerate(valores):
-        # El servicio puede devolver la clase o la probabilidad según cómo se
-        # empaquetó el modelo. Ambas son válidas; lo que no es válido es un
-        # valor fuera de rango.
-        if isinstance(v, bool):
-            numeros.append(float(v))
-        elif isinstance(v, (int, float)):
-            if not 0.0 <= float(v) <= 1.0:
-                problemas.append(f"Fila {i}: valor {v} fuera del rango [0, 1].")
-            numeros.append(float(v))
-        else:
-            problemas.append(f"Fila {i}: se esperaba un número y llegó {type(v).__name__}.")
+    if predicciones.isna().any():
+        problemas.append("Hay predicciones que no son números.")
+        return problemas
 
-    if esperado and len(numeros) == len(esperado):
-        sanos = [n for n, e in zip(numeros, esperado) if e == 0]
-        enfermos = [n for n, e in zip(numeros, esperado) if e == 1]
-        if sanos and enfermos and max(sanos) >= min(enfermos):
-            problemas.append(
-                f"El caso sano puntúa {max(sanos):.3f} y el que está en ventana "
-                f"de falla {min(enfermos):.3f}. El modelo podría estar invertido "
-                f"o haber perdido el preprocesamiento en el empaquetado.")
+    fuera = predicciones[(predicciones < 0) | (predicciones > 1)]
+    if len(fuera):
+        problemas.append(f"{len(fuera)} predicciones fuera del rango [0, 1].")
+
+    real = identidad["falla_14d"].to_numpy()
+    sanos = predicciones[real == 0]
+    en_falla = predicciones[real == 1]
+    if len(sanos) and len(en_falla) and en_falla.max() <= sanos.median():
+        problemas.append(
+            f"El equipo en ventana de falla puntúa {en_falla.max():.3f} y la "
+            f"mediana de los sanos es {sanos.median():.3f}. El modelo podría "
+            f"estar invertido o haber perdido el preprocesamiento.")
 
     return problemas
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Verifica la respuesta de un endpoint desplegado.")
-    parser.add_argument("--peticion", default="aml/endpoints/peticion-ejemplo.json")
-    parser.add_argument("--respuesta", required=True,
-                        help="Archivo con lo que devolvió el endpoint.")
-    parser.add_argument("--esperado", default="0,1",
-                        help="Etiquetas reales de las filas enviadas, separadas por coma.")
+        description="Verifica las predicciones de un despliegue por lotes.")
+    parser.add_argument("--predicciones", required=True,
+                        help="Archivo o carpeta con la salida del trabajo.")
+    parser.add_argument("--identidad", default="workdir/scoring/identidad.csv",
+                        help="Equipos enviados a puntuar, con su etiqueta real.")
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
 
-    with open(args.peticion, encoding="utf-8") as fh:
-        peticion = json.load(fh)
-    with open(args.respuesta, encoding="utf-8") as fh:
-        contenido = fh.read().strip()
-    respuesta = json.loads(contenido)
+    predicciones = cargar_predicciones(args.predicciones)
+    identidad = pd.read_csv(args.identidad)
+    problemas = verificar(predicciones, identidad)
 
-    esperado = [int(x) for x in args.esperado.split(",")] if args.esperado else None
-    problemas = verificar(peticion, respuesta, esperado)
+    tabla = identidad.assign(
+        prediccion=predicciones.to_numpy()[:len(identidad)],
+    ).sort_values("prediccion", ascending=False)
+    tabla["alerta"] = tabla["prediccion"] >= UMBRAL_OPERACION
 
-    valores = respuesta if isinstance(respuesta, list) else respuesta.get("predictions", [])
-    print("Respuesta del endpoint:")
-    for i, v in enumerate(valores):
-        etiqueta = f" (esperado {esperado[i]})" if esperado and i < len(esperado) else ""
-        alerta = " -> ALERTA" if isinstance(v, (int, float)) and v >= UMBRAL_OPERACION else ""
-        print(f"  fila {i}: {v}{etiqueta}{alerta}")
+    print(f"Día puntuado: {identidad['fecha'].iloc[0]}\n")
+    print(tabla[["equipo_code", "nombre", "prediccion", "falla_14d", "alerta"]]
+          .to_string(index=False))
 
     if problemas:
         print("\nPROBLEMAS ENCONTRADOS:")
@@ -103,8 +104,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  - {p}")
         return 1
 
-    print("\nLa respuesta es coherente: forma correcta, valores en rango, y el "
-          "caso en ventana de falla puntúa por encima del sano.")
+    alertados = tabla[tabla["alerta"]]
+    print(f"\nEl modelo alerta sobre {len(alertados)} de {len(tabla)} equipos.")
+    print("Las predicciones son coherentes: forma correcta, valores en rango, y "
+          "el equipo en ventana de falla puntúa por encima de los sanos.")
     return 0
 
 

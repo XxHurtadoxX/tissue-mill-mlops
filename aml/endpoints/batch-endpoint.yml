@@ -1,0 +1,12 @@
+$schema: https://azuremlschemas.azureedge.net/latest/batchEndpoint.schema.json
+
+name: tissue-falla-14d-lotes
+description: >
+  Puntúa todos los equipos de la planta y deja el resultado en un archivo.
+
+  Es el camino de producción del proyecto. Se ejecuta una vez al día, factura
+  solo los minutos que tarda y el clúster vuelve a cero nodos al terminar. El
+  razonamiento completo, con la comparación de costos frente a un endpoint en
+  línea, está en docs/decision-tipo-de-endpoint.md.
+
+auth_mode: aad_token
