@@ -1,0 +1,40 @@
+$schema: https://azuremlschemas.azureedge.net/latest/batchDeployment.schema.json
+
+name: candidato
+endpoint_name: tissue-falla-14d-lotes
+description: >
+  Segunda versión del modelo, conviviendo bajo el mismo endpoint que la que
+  atiende hoy.
+
+  Existe por una razón operativa concreta. Un endpoint por lotes admite varios
+  despliegues con uno marcado como predeterminado, y se puede invocar uno que
+  no lo sea indicándolo por nombre. Eso permite puntuar con una versión nueva
+  sobre los datos reales del día, comparar su salida con la de la que está en
+  servicio, y solo entonces decidir. Mantenimiento no ve nada mientras tanto.
+
+  Promover es cambiar cuál es el predeterminado. Volver atrás es cambiarlo de
+  vuelta, y no exige reconstruir ninguna imagen ni volver a desplegar, que es lo
+  que importa cuando algo sale mal fuera de horario.
+
+model: azureml:tissue-falla-14d:2
+
+environment: azureml:tissue-training@latest
+code_configuration:
+  code: ../..
+  scoring_script: src/model/batch_score.py
+
+compute: azureml:cpu-cluster
+
+resources:
+  instance_count: 1
+
+mini_batch_size: 10
+max_concurrency_per_instance: 1
+retry_settings:
+  max_retries: 2
+  timeout: 300
+
+output_action: append_row
+output_file_name: predicciones.csv
+error_threshold: -1
+logging_level: info
