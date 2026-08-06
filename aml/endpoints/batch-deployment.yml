@@ -8,10 +8,23 @@ description: >
   nueva es cambiar cuál lo es, y volver atrás es cambiarlo de vuelta, sin
   redesplegar nada.
 
-# El modelo está en formato MLflow, así que no hace falta script de puntuación
-# ni entorno: Azure los deduce del empaquetado, que incluye la firma de entrada
-# y las dependencias.
 model: azureml:tissue-falla-14d:1
+
+# Entorno y script propios, en vez del despliegue sin código que el formato
+# MLflow permitiría.
+#
+# Se intentó primero esa vía y falló al construir la imagen: Azure genera el
+# entorno a partir del modelo y le añade paquetes propios que arrastran una
+# versión antigua de matplotlib, que ya no compila en Python moderno porque usa
+# una función del módulo platform eliminada hace varias versiones. El problema
+# no está en el modelo sino en lo que la generación automática añade encima.
+#
+# Declarar el entorno evita ese añadido, y a cambio obliga a escribir el script
+# de puntuación.
+environment: azureml:tissue-training@latest
+code_configuration:
+  code: ../..
+  scoring_script: src/model/batch_score.py
 
 # Aquí está el ahorro. Se usa el clúster que ya existe, y como tiene mínimo cero
 # nodos, al terminar el trabajo se apaga solo. Un endpoint en línea, en cambio,
