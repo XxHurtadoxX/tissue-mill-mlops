@@ -1,0 +1,13 @@
+$schema: https://azuremlschemas.azureedge.net/latest/managedOnlineDeployment.schema.json
+
+name: azul
+endpoint_name: tissue-falla-14d
+
+# El modelo está registrado en formato MLflow, así que no hace falta script de
+# puntuación ni entorno: Azure los deduce del propio empaquetado, que incluye la
+# firma de entrada y las dependencias. Es la ventaja concreta de haber guardado
+# el modelo en ese formato desde la fase de entrenamiento.
+model: azureml:tissue-falla-14d:1
+
+instance_type: Standard_DS2_v2
+instance_count: 1

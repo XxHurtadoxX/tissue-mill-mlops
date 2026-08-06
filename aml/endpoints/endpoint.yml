@@ -1,0 +1,13 @@
+$schema: https://azuremlschemas.azureedge.net/latest/managedOnlineEndpoint.schema.json
+
+name: tissue-falla-14d
+description: >
+  Responde, para un equipo y un día, la probabilidad de que falle dentro de los
+  próximos catorce días.
+
+  El endpoint es la puerta: expone una dirección estable y la autenticación.
+  Detrás pueden convivir varias versiones del modelo repartiéndose el tráfico,
+  y esa separación es lo que permite liberar una versión nueva sin que los
+  consumidores cambien nada ni noten el cambio.
+
+auth_mode: key

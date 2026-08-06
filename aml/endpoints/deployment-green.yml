@@ -1,0 +1,15 @@
+$schema: https://azuremlschemas.azureedge.net/latest/managedOnlineDeployment.schema.json
+
+name: verde
+endpoint_name: tissue-falla-14d
+
+# Segunda versión conviviendo con la primera. En un caso real sería un modelo
+# reentrenado; aquí es el mismo, porque lo que se quiere demostrar es el
+# mecanismo de liberación y no una mejora del modelo.
+#
+# Entra con cero tráfico. Se le da paso solo después de comprobar que responde,
+# y volver atrás es reasignar el tráfico, no redesplegar.
+model: azureml:tissue-falla-14d:1
+
+instance_type: Standard_DS2_v2
+instance_count: 1
