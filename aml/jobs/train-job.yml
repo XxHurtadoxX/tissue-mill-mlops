@@ -6,7 +6,7 @@ display_name: entrenamiento-propio
 description: >
   Entrena el clasificador de falla a catorce días con el script del repositorio.
   Reemplaza al modelo de AutoML por uno que se puede inspeccionar, versionar y
-  reentrenar, que es lo que necesitan las fases de despliegue y monitoreo.
+  reentrenar, que es lo que el despliegue y el monitoreo necesitan.
 
 # Se sube el repositorio completo para que funcionen los imports relativos
 # entre src.model, src.features y src.simulator.

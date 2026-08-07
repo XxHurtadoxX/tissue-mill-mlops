@@ -10,12 +10,12 @@ name: Promover un modelo a producción
 # mantenimiento, y eso no debería ocurrir porque alguien fusionó un pull
 # request.
 #
-# **En qué se diferencia de la protección de rama, que el examen confunde a
-# propósito.** La protección de rama cuida el código: nada entra a la rama
-# principal sin pasar lint y pruebas. El environment cuida el despliegue: nada
-# llega a producción sin que una persona lo apruebe. Son controles distintos
-# sobre cosas distintas, y tener uno no da el otro. Un cambio puede estar
-# perfectamente revisado y fusionado, y aun así no querer que salga hoy.
+# **En qué se diferencia de la protección de rama.** La protección de rama cuida
+# el código: nada entra a la rama principal sin pasar lint y pruebas. El
+# environment cuida el despliegue: nada llega a producción sin que una persona lo
+# apruebe. Son controles distintos sobre cosas distintas, y tener uno no da el
+# otro. Un cambio puede estar perfectamente revisado y fusionado, y aun así no
+# querer que salga hoy.
 on:
   workflow_dispatch:
     inputs:

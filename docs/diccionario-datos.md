@@ -1,6 +1,6 @@
 # Diccionario de datos
 
-Referencia técnica de todos los esquemas que produce el simulador y de la gramática de los tags. Base para la Fase 1 (capas silver/gold).
+Referencia técnica de los esquemas que produce el simulador y de la gramática de los tags. Es la base sobre la que se construyen las capas silver y gold.
 
 ## Gramática de tags (ISA-5.1)
 

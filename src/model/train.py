@@ -2,8 +2,8 @@
 
 Es el script que reemplaza al modelo de AutoML. La razón para escribirlo no es
 mejorar el número, que ya se alcanzó, sino recuperar el control: un modelo
-propio se puede inspeccionar, versionar, explicar y reentrenar, y las fases de
-despliegue y monitoreo necesitan las cuatro cosas.
+propio se puede inspeccionar, versionar, explicar y reentrenar, y desplegarlo y
+vigilarlo en producción exige las cuatro cosas.
 
 Uso local::
 
@@ -46,6 +46,15 @@ def construir_modelo(n_estimators: int, max_features: str, min_samples_leaf: int
     La imputación va dentro del pipeline y no antes, para que al ajustarse use
     solo estadísticas del conjunto de entrenamiento. Calcular la mediana sobre
     todos los datos y después partir sería una fuga discreta pero real.
+
+    Sobre los indicadores de valor faltante conviene entender qué están
+    haciendo. Los nulos de esta tabla son estructurales, porque no todos los
+    equipos llevan los mismos sensores, así que los indicadores describen la
+    instrumentación de la máquina y no la calidad del dato. Al declarar
+    ``n_sensores`` de forma explícita esa información ya entra por la puerta
+    principal, y los indicadores quedan en su mayor parte redundantes. Se
+    conservan porque quitarlos no mejoró nada y una sola estrategia de
+    imputación deja el código más simple.
     """
     return make_pipeline(
         SimpleImputer(strategy="median", add_indicator=True),

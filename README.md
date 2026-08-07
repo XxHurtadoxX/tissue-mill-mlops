@@ -1,27 +1,21 @@
 # tissue-mill-mlops
 
-**Mantenimiento predictivo de una planta de papel tissue, con el ciclo MLOps completo sobre Azure Machine Learning.**
+**Mantenimiento predictivo para una máquina de papel tissue, del dato crudo al modelo desplegado.**
 
 [![CI](https://github.com/XxHurtadoxX/tissue-mill-mlops/actions/workflows/ci.yml/badge.svg)](https://github.com/XxHurtadoxX/tissue-mill-mlops/actions/workflows/ci.yml)
 [![Datos diarios](https://github.com/XxHurtadoxX/tissue-mill-mlops/actions/workflows/daily-data.yml/badge.svg)](https://github.com/XxHurtadoxX/tissue-mill-mlops/actions/workflows/daily-data.yml)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-> Proyecto de portafolio de **Daniel Hurtado**. Implementa el ciclo completo de MLOps sobre Azure Machine Learning aplicado a un caso industrial real: anticipar la falla de los equipos rotativos críticos de una máquina de papel tissue, desde la generación de datos hasta el despliegue en producción.
+## El problema
 
----
+En una máquina de papel tissue la producción es una línea continua. Si un equipo se detiene, se detiene toda la máquina, y una bomba de vacío que falla un domingo a las dos de la mañana cuesta unas 18 horas de parada y más de 40 toneladas perdidas.
 
-## ¿Qué problema resuelve?
+Las señales suelen estar ahí antes del evento. La corriente del motor llevaba dos semanas subiendo y la ruta de vibración del mes ya marcaba la bomba en zona C. Nadie las cruza porque viven en sistemas distintos y cada turno atiende lo suyo.
 
-En una máquina de papel tissue la producción es una línea continua: si un equipo se detiene, se detiene toda la máquina. Una bomba de vacío que falla un domingo a las 2 a.m. puede costar 18 horas de parada y más de 40 toneladas de producción perdida. Las señales suelen estar disponibles antes del evento (la corriente del motor llevaba dos semanas subiendo, la ruta de vibración del mes ya marcaba la bomba en zona C), pero nadie las cruza porque viven en sistemas distintos y cada turno atiende lo suyo.
-
-Este proyecto predice esas fallas con días de anticipación para que la intervención caiga en la parada programada, no en la madrugada.
-
-Un dato que resume el problema: sobre 37 eventos de falla en dos años y medio, **la ruta mensual de vibración que se usa hoy anticipa uno**. No porque la norma esté mal, sino porque una medición al mes no alcanza a atrapar una degradación que se desarrolla en cuatro semanas.
+Un dato resume el tamaño del hueco: sobre 37 fallas en dos años y medio, **la ruta mensual de vibración que se usa hoy anticipa una**. No es que la norma esté mal. Es que una medición al mes no alcanza a atrapar una degradación que se desarrolla en cuatro semanas.
 
 ## Resultado
 
-Medido sobre cinco meses de datos que el modelo nunca vio, y que no intervinieron en ninguna decisión de diseño:
+Medido sobre cinco meses que el modelo nunca vio y que no intervinieron en ninguna decisión de diseño:
 
 | | Modelo | Práctica actual |
 |---|---|---|
@@ -30,119 +24,100 @@ Medido sobre cinco meses de datos que el modelo nunca vio, y que no interviniero
 | Anticipación mediana | 5.5 días | — |
 | Inspecciones generadas al mes | 8 | 1 ruta mensual |
 
-Una de cada cuatro fallas ocurre sin dejar rastro en los sensores, por un golpe o una fractura súbita. Esas son indetectables por cualquier método, así que el desempeño se reporta contra las que sí tenían precursor. Distinguirlas es lo que separa una cifra honesta de una que subvende el sistema.
+Una de cada cuatro fallas ocurre sin dejar rastro en los sensores, por un golpe o una fractura súbita, y ninguna técnica puede anticiparlas. Por eso el desempeño se reporta contra las que sí tenían precursor. Contarlas todas juntas subvendería el sistema y ocultaría dónde están sus límites reales.
+
+El umbral que separa alertar de no alertar no se eligió maximizando una métrica. Se eligió a partir de cuántas inspecciones puede atender el turno de mantenimiento en un mes, que es una restricción del cliente y no del modelo. El razonamiento está en [docs/caso-negocio.md](docs/caso-negocio.md).
+
+## Cómo funciona
+
+```
+historian, SAP PM, rutas de vibración
+        │
+        ├─ limpieza          descarta lecturas BAD y sensores congelados
+        ├─ tabla diaria      una fila por equipo y día, con ventanas móviles
+        ├─ etiquetas         ¿falla en los próximos 14 días?
+        │
+        ├─ modelo            ExtraTrees sobre 11 variables
+        ├─ umbral            fijado por la capacidad de inspección
+        │
+        └─ endpoint por lotes    puntúa los doce equipos cada mañana
+```
+
+Todo lo de Azure Machine Learning está declarado en YAML bajo [`aml/`](aml/), incluidos el pipeline de reentrenamiento y la compuerta que decide si el modelo nuevo merece reemplazar al actual. El endpoint es por lotes y no en línea, y esa decisión tiene su propio documento porque cambia el costo por un factor de 288: [docs/decision-tipo-de-endpoint.md](docs/decision-tipo-de-endpoint.md).
 
 ## El simulador de datos
 
-Antes de llegar al modelo, el proyecto resuelve un problema previo: generar datos de planta que se comporten como datos de planta reales, con su suciedad incluida. No encontré un generador open-source en español que simulara historian, órdenes de mantenimiento y rutas de vibración con ese nivel de detalle, así que lo construí para este proyecto. Cubre cinco fuentes:
+Antes del modelo había que resolver otra cosa: conseguir datos de planta que se comporten como datos de planta, con su suciedad incluida. No encontré un generador abierto en español que simulara historian, órdenes de mantenimiento y rutas de vibración con ese detalle, así que lo escribí para este proyecto.
 
-| Fuente | Qué simula | Suciedad realista incluida |
+| Fuente | Qué simula | Suciedad incluida |
 |---|---|---|
-| **Historian** (DCS) | Lecturas de sensores por hora, con tags ISA-5.1 (`TIS1.45VI4523.PV`) | Lecturas `-9999`/`BAD` por fallo de comunicación · **sensores congelados** (flatline) · huecos por parada |
-| **Lotes de pulper** | Duración, kg y kWh de cada lote | Firma del **desgaste del rotor** (kWh/kg sube ciclo a ciclo) |
-| **Rutas de vibración** | Medición mensual portátil, RMS + gE + zona ISO 20816 | — |
-| **Órdenes SAP PM** | Avisos y órdenes de trabajo | **Texto libre con errores** ("ruido y vibracion en Prensa de succion, revisar urgente"), sin tildes, `fecha_aviso ≠ fecha real de falla` |
-| **Ground truth** | El oráculo del simulador: onset y fecha real de cada falla | Separado de bronze a propósito; no se usa para construir features, solo para evaluar |
+| **Historian** (DCS) | Lecturas por hora con tags ISA-5.1 (`TIS1.45VI4523.PV`) | Lecturas `-9999` y `BAD` por fallo de comunicación, sensores congelados, huecos por parada |
+| **Lotes de pulper** | Duración, kg y kWh de cada lote | Firma del desgaste del rotor, con kWh/kg subiendo ciclo a ciclo |
+| **Rutas de vibración** | Medición mensual portátil, RMS y gE con zona ISO 20816 | — |
+| **Órdenes SAP PM** | Avisos y órdenes de trabajo | Texto libre con errores y sin tildes, fecha de aviso distinta de la fecha real de falla |
+| **Ground truth** | El oráculo: onset y fecha real de cada falla | Separado a propósito. No construye variables, solo evalúa |
 
-La generación es determinista: dado el mismo `--seed`, se reproduce exactamente la misma historia de planta. El tiempo entre fallas sigue una distribución Weibull, apropiada para modelar desgaste mecánico, a diferencia de la exponencial (que asume fallas puramente aleatorias y es el supuesto por defecto en simuladores más simples).
+La generación es determinista. Con la misma semilla se reproduce exactamente la misma historia de planta. El tiempo entre fallas sigue una Weibull, apropiada para desgaste mecánico, en vez de la exponencial que asume fallas puramente aleatorias.
 
-El simulador también está calibrado para que el problema conserve su dificultad. Una de cada cuatro fallas ocurre sin dejar rastro en los sensores, el punto de operación de cada equipo deriva de un día a otro por causas legítimas, y algunos instrumentos se descalibran e imitan una degradación que no existe. Con estos mecanismos la mejor variable individual alcanza AUC de 0.85, un rango creíble para mantenimiento predictivo. El razonamiento completo está en el [diccionario de datos](docs/diccionario-datos.md).
+También está calibrado para que el problema conserve su dificultad. Una de cada cuatro fallas es silenciosa, el punto de operación de cada equipo deriva de un día a otro por causas legítimas, y algunos instrumentos se descalibran e imitan una degradación que no existe. Con eso, la mejor variable individual llega a AUC de 0.85, un rango creíble. El detalle está en el [diccionario de datos](docs/diccionario-datos.md).
 
 ## Datos que llegan a diario
 
-Una planta real genera datos todos los días, así que el repositorio también lo hace. El workflow [`daily-data.yml`](.github/workflows/daily-data.yml) corre cada día a las 06:00 UTC, genera el extracto del historian correspondiente a esa fecha y comprueba que se reproduzca idéntico al volver a generarlo, que es la garantía de que el histórico sigue siendo reconstruible.
+Una planta real genera datos todos los días, así que el repositorio también. El workflow [`daily-data.yml`](.github/workflows/daily-data.yml) corre a las 06:00 UTC, genera el extracto de esa fecha y comprueba que se reproduzca idéntico al volver a generarlo, que es lo que garantiza que el histórico siga siendo reconstruible.
 
-Durante el primer mes el workflow además commiteaba cada extracto, y el historial conserva más de sesenta de esos commits. Dejó de hacerlo al proteger la rama principal: un automatismo que escribe en `main` sin pasar por las verificaciones es justamente lo que esa protección impide, y las alternativas pasaban por guardar credenciales de larga duración. El extracto se publica ahora como artefacto de cada ejecución.
+Durante el primer mes además commiteaba cada extracto, y el historial conserva más de sesenta de esos commits. Dejó de hacerlo al proteger la rama principal. Un automatismo que escribe en `main` sin pasar las verificaciones es justamente lo que esa protección impide, y las alternativas pasaban por guardar credenciales de larga duración. Ahora publica el extracto como artefacto de cada ejecución.
 
-## Instalación y uso
+## Uso
 
 ```bash
 git clone https://github.com/XxHurtadoxX/tissue-mill-mlops.git
 cd tissue-mill-mlops
-pip install -r requirements-dev.txt      # desarrollo y pruebas
-# pip install -r requirements-local.txt  # añade el conector para registrar
-#                                        # experimentos en el workspace
+pip install -r requirements-dev.txt
 ```
 
-El repositorio ya trae una muestra de datos en `data/`, así que se puede explorar sin generar nada. Para reconstruir el histórico completo y armar la tabla de entrenamiento:
+El repositorio trae una muestra de 120 días en `data/`, así que se puede explorar sin generar nada. Para reconstruir el histórico completo y armar la tabla de entrenamiento:
 
 ```bash
-# Histórico de dos años y medio (unos 45 MB, no versionado)
 python -m src.simulator.generate --from 2024-01-01 --to 2026-07-26 --out workdir
-
-# Tabla de entrenamiento: una fila por equipo y por día
 python -m src.features.build_dataset --data workdir --out workdir/gold
 ```
 
-Para comprobar el estado del código, lo mismo que corre la integración continua:
+Son unos 45 MB que quedan en `workdir/`, fuera del control de versiones porque estos dos comandos los regeneran.
+
+Para comprobar el código, lo mismo que corre la integración continua:
 
 ```bash
 flake8 src tests
 pytest
 ```
 
-### Dónde viven los datos
-
-| Carpeta | Versionada | Qué contiene |
-|---|---|---|
-| `data/` | Sí | Muestra de 120 días, escrita por el workflow programado durante el primer mes del proyecto |
-| `workdir/` | No | Espacio de trabajo local: histórico completo y tabla de entrenamiento. Se regenera con los dos comandos de arriba |
-
-Ambas siguen el patrón medallón: los datos crudos entran como **bronze**, la limpieza produce **silver** y la tabla lista para entrenar es **gold**.
-
-## Estructura del repositorio
+## Estructura
 
 ```
-tissue-mill-mlops/
-├── src/
-│   ├── simulator/           # genera los datos (solo librería estándar)
-│   │   ├── plant.py           equipos, tags ISA-5.1, cronograma de fallas Weibull
-│   │   ├── dirty.py           lecturas BAD y sensores congelados
-│   │   └── generate.py        CLI: por día, por rango o histórico completo
-│   └── features/            # convierte los datos en tabla de entrenamiento
-│       ├── clean.py           bronze a silver: descarta lo que no es confiable
-│       └── build_dataset.py   gold: ventanas móviles, contexto y etiquetas
-├── aml/                     # infraestructura de Azure ML declarada en YAML
-│   ├── setup/                 workspace y clúster de cómputo
-│   └── data/                  los tres data assets registrados
-├── tests/
-│   ├── pipeline/              guardas anti-fuga, etiquetas y limpieza
-│   └── simulator/             determinismo y firmas físicas del generador
-├── docs/
-│   ├── caso-negocio.md        el problema en planta y el valor en pesos
-│   └── diccionario-datos.md   esquemas, tags y por qué el problema es difícil
-├── data/                    # muestra viva versionada (ver tabla de arriba)
-└── .github/workflows/
-    ├── ci.yml                 lint y pruebas en cada cambio
-    └── daily-data.yml         verificación diaria del simulador
+src/simulator/     genera los datos, solo con librería estándar
+src/features/      limpieza, ventanas móviles, etiquetas y partición temporal
+src/model/         variables, evaluación, umbral, entrenamiento y compuerta
+aml/               Azure ML declarado en YAML: cómputo, datos, pipeline, endpoint
+tests/pipeline/    guardas contra fuga de información y validez de los YAML
+tests/simulator/   determinismo y firmas físicas del generador
+docs/              caso de negocio, diccionario de datos y decisiones de diseño
+data/              muestra viva versionada
 ```
 
-El simulador no depende de librerías externas, de modo que el workflow diario corre sin instalar nada. Las dependencias de `requirements.txt` (pandas y numpy) solo hacen falta para construir la tabla de entrenamiento.
+El simulador no usa librerías externas, de modo que el workflow diario corre sin instalar nada. Pandas y numpy solo hacen falta para construir la tabla.
 
-## Roadmap
+Las pruebas del pipeline vigilan un tipo de error concreto. **Una fuga de información no produce ningún fallo visible**: el código corre, las métricas mejoran y el problema aparece meses después en producción. Contra eso no sirve revisar el código con cuidado, porque el error reaparece en la siguiente modificación.
 
-El simulador (Fase 0) es la base sobre la que se construye el resto del ciclo de MLOps, en fases incrementales:
+## Lo que no está resuelto
 
-- [x] **Fase 0 (datos)**: simulador determinista, CI y generación diaria automática
-- [x] **Fase 1 (infraestructura)**: workspace y cómputo declarados en YAML, tabla de entrenamiento y tres data assets versionados
-- [x] **Fase 2 (exploración)**: líneas base medidas, AutoML, y el umbral elegido según la capacidad de inspección
-- [x] **Fase 3 (modelo)**: entrenamiento propio parametrizado, búsqueda de hiperparámetros y evaluación final sobre datos nunca vistos
-- [x] **Fase 4 (automatización)**: pipeline de componentes con reentrenamiento programado y registro condicional del modelo
-- [x] **Fase 5 (integración continua)**: rama protegida, validación de las definiciones en cada cambio y reentrenamiento disparado al fusionar
-- [x] **Fase 6 (despliegue)**: endpoint por lotes con script de puntuación propio, cambio de versión reversible y promoción sujeta a autorización humana *(estás aquí)*
-- [ ] **Fase 7**: monitoreo de data drift en producción
+Dos cosas quedan abiertas y se anotan aquí en vez de darlas por hechas.
 
-Dos cosas quedan abiertas y se anotan aquí en vez de darlas por hechas. La
-compuerta del reentrenamiento decide si el modelo nuevo merece reemplazar al
-actual, pero ningún paso actúa sobre esa decisión: escribe el veredicto y ahí se
-queda. Y convivir con dos despliegues bajo el mismo endpoint no llegó a
-funcionar, por un motivo que Azure no expuso; está documentado en
-[docs/decision-tipo-de-endpoint.md](docs/decision-tipo-de-endpoint.md).
+La compuerta del reentrenamiento decide si el modelo nuevo merece reemplazar al actual, y lo hace bien: en su última corrida rechazó al candidato porque anticipaba cuatro de cinco eventos frente a cinco de cinco del modelo en servicio. Pero ningún paso actúa sobre esa decisión. Escribe el veredicto y ahí se queda.
 
-## Nota sobre los datos
+Y convivir con dos despliegues bajo el mismo endpoint no llegó a funcionar. El plano de control daba el despliegue nuevo por creado, el endpoint nunca lo reconoció, y Azure no expuso el motivo por ninguna vía. Está documentado en [docs/decision-tipo-de-endpoint.md](docs/decision-tipo-de-endpoint.md) junto con lo que sí funciona, que es el cambio de versión y la vuelta atrás.
+
+## Datos
 
 Son **100% sintéticos**, generados por el simulador. No provienen de ninguna planta real ni contienen información confidencial. El caso está inspirado en la operación típica de una máquina tissue de fibra reciclada.
 
-## Licencia
-
-Distribuido bajo licencia MIT. Ver [LICENSE](LICENSE).
+Distribuido bajo licencia [MIT](LICENSE).

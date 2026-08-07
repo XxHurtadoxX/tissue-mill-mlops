@@ -1,10 +1,8 @@
-# Infraestructura y assets en Azure Machine Learning
+# Infraestructura en Azure Machine Learning
 
-Todo se declara en YAML y se aplica con la CLI, sin tocar el portal. Así el
-entorno se reconstruye igual las veces que haga falta y los cambios quedan
-versionados junto al código.
+Todo se declara en YAML y se aplica con la CLI, sin tocar el portal. Así el entorno se reconstruye igual las veces que haga falta y los cambios quedan versionados junto al código.
 
-## Requisitos previos
+## Antes de empezar
 
 ```bash
 az extension add -n ml -y
@@ -12,8 +10,7 @@ az login
 az account set --subscription "<tu-suscripcion>"
 ```
 
-Los assets apuntan al backfill histórico, que no está versionado. Hay que
-generarlo antes:
+Los assets de datos apuntan al histórico completo, que no está versionado. Hay que generarlo primero:
 
 ```bash
 python -m src.simulator.generate --from 2024-01-01 --to 2026-07-26 --out workdir
@@ -27,46 +24,45 @@ RG=rg-tissue-mlops
 WS=mlw-tissue-mlops
 
 az group create -n $RG -l eastus
-az ml workspace create -f aml/setup/workspace.yml -g $RG
-az ml compute create -f aml/setup/compute-cluster.yml -g $RG -w $WS
+az ml workspace create -f setup/workspace.yml -g $RG
+az ml compute create -f setup/compute-cluster.yml -g $RG -w $WS
 ```
 
-El clúster se crea con `min_instances: 0`, así que no genera costo mientras no
-haya trabajos en cola. No se crea instancia de cómputo: para registrar datos
-basta la CLI, y una instancia encendida y olvidada es la principal fuente de
-gasto imprevisto en Azure Machine Learning.
+El clúster se crea con `min_instances: 0`, así que no cuesta nada mientras no haya trabajos en cola. No se crea instancia de cómputo: para todo esto basta la CLI, y una instancia encendida y olvidada es la principal fuente de gasto imprevisto en Azure Machine Learning.
 
 ## Registrar los datos
 
 ```bash
-az ml data create -f aml/data/bronze-historian.yml -g $RG -w $WS
-az ml data create -f aml/data/training-table.yml   -g $RG -w $WS
-az ml data create -f aml/data/ground-truth.yml     -g $RG -w $WS
+for f in data/*.yml; do az ml data create -f "$f" -g $RG -w $WS; done
 ```
 
-| Asset | Tipo | Motivo |
-|---|---|---|
-| `tissue-historian-bronze` | `uri_folder` | Es un directorio completo de CSV que se recorre entero |
-| `tissue-training-table` | `mltable` | Lleva el esquema junto a los datos, requisito de AutoML |
-| `tissue-ground-truth` | `uri_file` | Es un archivo único que se lee completo |
+El tipo de cada asset no es un detalle administrativo, condiciona qué puede consumirlo:
 
-## Verificar
+| Tipo | Cuándo | Ejemplo |
+|---|---|---|
+| `uri_folder` | Un directorio que se recorre entero | `tissue-historian-bronze` |
+| `uri_file` | Un archivo único que se lee completo | `tissue-ground-truth` |
+| `mltable` | Lleva el esquema junto a los datos, requisito de AutoML | `tissue-training-table` |
+
+## Entrenar y desplegar
 
 ```bash
-az ml data list    -g $RG -w $WS -o table
-az ml compute list -g $RG -w $WS -o table
+# Pipeline completo: prepara, parte, entrena y decide si reemplazar
+az ml job create -f jobs/pipeline-job.yml -g $RG -w $WS --stream
+
+# Endpoint por lotes
+az ml batch-endpoint create   -f endpoints/batch-endpoint.yml    -g $RG -w $WS
+az ml batch-deployment create -f endpoints/batch-deployment.yml --set-default -g $RG -w $WS
 ```
 
-El clúster debe aparecer con cero nodos. Conviene revisarlo al terminar cada
-sesión de trabajo.
+El entorno de [`environments/`](environments/) se declara en vez de dejar que Azure lo genere a partir del modelo. La generación automática añade paquetes propios que arrastran dependencias incompatibles, y declararlo además garantiza que el modelo se sirva con las mismas versiones con las que se ajustó.
 
-## Sobre el costo
+## Costo
 
-El workspace, el registro de datos y el clúster en reposo no generan cargo
-apreciable. Lo que se paga es el tiempo de cómputo de los trabajos y, si se
-crea, la instancia de cómputo mientras esté encendida.
+El workspace, el registro de datos y el clúster en reposo no generan cargo apreciable. Se paga el tiempo de cómputo de los trabajos. El endpoint por lotes tampoco reserva nada: usa el clúster, que vuelve a cero nodos al terminar.
 
-No hace falta borrar el grupo de recursos entre fases: hacerlo obligaría a
-repetir el registro de los assets sin ahorrar nada relevante. La regla cambia
-con el endpoint en línea de fases posteriores, que sí cobra por hora mientras
-exista y debe eliminarse en cuanto se capture la evidencia.
+Lo que sí cobra por día es el registro de contenedores, que Azure crea la primera vez que se construye un entorno propio. Conviene tenerlo presente si el grupo de recursos va a quedar en pie sin uso.
+
+```bash
+az ml compute list -g $RG -w $WS -o table   # el clúster debe estar en cero nodos
+```
