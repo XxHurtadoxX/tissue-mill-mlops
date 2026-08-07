@@ -128,9 +128,16 @@ El simulador (Fase 0) es la base sobre la que se construye el resto del ciclo de
 - [x] **Fase 2 (exploración)**: líneas base medidas, AutoML, y el umbral elegido según la capacidad de inspección
 - [x] **Fase 3 (modelo)**: entrenamiento propio parametrizado, búsqueda de hiperparámetros y evaluación final sobre datos nunca vistos
 - [x] **Fase 4 (automatización)**: pipeline de componentes con reentrenamiento programado y registro condicional del modelo
-- [x] **Fase 5 (integración continua)**: rama protegida, validación de las definiciones en cada cambio y reentrenamiento disparado al fusionar *(estás aquí)*
-- [ ] **Fase 6**: entornos dev/prod con aprobación manual y despliegue blue/green
+- [x] **Fase 5 (integración continua)**: rama protegida, validación de las definiciones en cada cambio y reentrenamiento disparado al fusionar
+- [x] **Fase 6 (despliegue)**: endpoint por lotes con script de puntuación propio, cambio de versión reversible y promoción sujeta a autorización humana *(estás aquí)*
 - [ ] **Fase 7**: monitoreo de data drift en producción
+
+Dos cosas quedan abiertas y se anotan aquí en vez de darlas por hechas. La
+compuerta del reentrenamiento decide si el modelo nuevo merece reemplazar al
+actual, pero ningún paso actúa sobre esa decisión: escribe el veredicto y ahí se
+queda. Y convivir con dos despliegues bajo el mismo endpoint no llegó a
+funcionar, por un motivo que Azure no expuso; está documentado en
+[docs/decision-tipo-de-endpoint.md](docs/decision-tipo-de-endpoint.md).
 
 ## Nota sobre los datos
 
