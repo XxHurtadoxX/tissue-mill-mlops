@@ -5,6 +5,8 @@
 [![CI](https://github.com/XxHurtadoxX/tissue-mill-mlops/actions/workflows/ci.yml/badge.svg)](https://github.com/XxHurtadoxX/tissue-mill-mlops/actions/workflows/ci.yml)
 [![Datos diarios](https://github.com/XxHurtadoxX/tissue-mill-mlops/actions/workflows/daily-data.yml/badge.svg)](https://github.com/XxHurtadoxX/tissue-mill-mlops/actions/workflows/daily-data.yml)
 
+Proyecto de portafolio de **[Daniel Hurtado](https://github.com/XxHurtadoxX)**, Machine Learning Engineer. Cubre el caso completo, desde generar unos datos de planta que se comporten como datos de planta hasta el sistema que entrena, evalúa y despliega el modelo solo sobre Azure Machine Learning, pasando por el encuadre económico que decide cuándo vale la pena alertar.
+
 ## El problema
 
 En una máquina de papel tissue la producción es una línea continua. Si un equipo se detiene, se detiene toda la máquina, y una bomba de vacío que falla un domingo a las dos de la mañana cuesta unas 18 horas de parada y más de 40 toneladas perdidas.
@@ -14,6 +16,8 @@ Las señales suelen estar ahí antes del evento. La corriente del motor llevaba 
 Un dato resume el tamaño del hueco: sobre 37 fallas en dos años y medio, **la ruta mensual de vibración que se usa hoy anticipa una**. No es que la norma esté mal. Es que una medición al mes no alcanza a atrapar una degradación que se desarrolla en cuatro semanas.
 
 ## Resultado
+
+![Comparación entre la ruta mensual de vibración y el modelo, medida sobre cinco meses de datos no vistos](docs/img/comparativa.svg)
 
 Medido sobre cinco meses que el modelo nunca vio y que no intervinieron en ninguna decisión de diseño:
 
@@ -26,7 +30,22 @@ Medido sobre cinco meses que el modelo nunca vio y que no intervinieron en ningu
 
 Una de cada cuatro fallas ocurre sin dejar rastro en los sensores, por un golpe o una fractura súbita, y ninguna técnica puede anticiparlas. Por eso el desempeño se reporta contra las que sí tenían precursor. Contarlas todas juntas subvendería el sistema y ocultaría dónde están sus límites reales.
 
-El umbral que separa alertar de no alertar no se eligió maximizando una métrica. Se eligió a partir de cuántas inspecciones puede atender el turno de mantenimiento en un mes, que es una restricción del cliente y no del modelo. El razonamiento está en [docs/caso-negocio.md](docs/caso-negocio.md).
+El umbral que separa alertar de no alertar no se eligió maximizando una métrica. Se eligió a partir de cuántas inspecciones puede atender el turno de mantenimiento en un mes, que es una restricción del cliente y no del modelo.
+
+## Cuánto vale
+
+Los seis equipos cuya parada detiene la máquina completa acumulan **9.4 fallas al año**, contadas sobre el histórico. La ruta mensual de vibración anticipa una de cada 37, así que en la práctica todas llegan como parada de emergencia.
+
+| | Al año |
+|---|---|
+| Se pierde hoy | USD 169.000 |
+| Se perdería con el modelo | USD 79.200 |
+| **Ahorro** | **USD 90.000** |
+| Costo de operar el sistema | USD 3.080 |
+
+Con la hora de máquina a USD 1.500 y paradas no programadas de 12 horas. En el escenario conservador, a USD 1.000 y 8 horas, el ahorro baja a USD 36.000 y el sistema todavía se paga en el primer trimestre.
+
+Esa holgura no viene de que el modelo sea bueno, viene de la asimetría del problema. Una hora de técnico cuesta cincuenta veces menos que una hora de máquina parada, de modo que alertar de más sale barato y alertar de menos sale caro. El cálculo completo, con lo que deja fuera y por qué, está en [docs/caso-negocio.md](docs/caso-negocio.md).
 
 ## Cómo funciona
 
@@ -119,5 +138,15 @@ Y convivir con dos despliegues bajo el mismo endpoint no llegó a funcionar. El 
 ## Datos
 
 Son **100% sintéticos**, generados por el simulador. No provienen de ninguna planta real ni contienen información confidencial. El caso está inspirado en la operación típica de una máquina tissue de fibra reciclada.
+
+## Autor
+
+**Daniel Hurtado** ([@XxHurtadoxX](https://github.com/XxHurtadoxX)) · Machine Learning Engineer
+
+Vengo de la economía, y eso decide cómo está construido este proyecto. El umbral que dispara una alerta no sale de maximizar F1. Sale de comparar lo que cuesta una hora de técnico contra lo que cuesta una hora de máquina parada, y de preguntarle a mantenimiento cuántas inspecciones puede atender en un mes.
+
+En un sistema como este la parte difícil casi nunca es el modelo. Es decidir qué se optimiza, contra qué se compara y cuándo conviene no hacer nada.
+
+Si te sirve para tu propia planta o quieres discutir el enfoque, los issues están abiertos.
 
 Distribuido bajo licencia [MIT](LICENSE).
