@@ -1,0 +1,117 @@
+name: Promover un modelo a producción
+
+# Cambia qué versión del modelo atiende las alertas de mantenimiento, y solo lo
+# hace después de que una persona lo autorice.
+#
+# **Por qué el disparador es manual y no automático.** El reentrenamiento ya
+# corre solo y su compuerta ya decide si el modelo nuevo es mejor. Lo que falta
+# no es otra comprobación automática, sino el momento en que alguien asume la
+# decisión. Promover cambia a qué modelo le hace caso el turno de
+# mantenimiento, y eso no debería ocurrir porque alguien fusionó un pull
+# request.
+#
+# **En qué se diferencia de la protección de rama, que el examen confunde a
+# propósito.** La protección de rama cuida el código: nada entra a la rama
+# principal sin pasar lint y pruebas. El environment cuida el despliegue: nada
+# llega a producción sin que una persona lo apruebe. Son controles distintos
+# sobre cosas distintas, y tener uno no da el otro. Un cambio puede estar
+# perfectamente revisado y fusionado, y aun así no querer que salga hoy.
+on:
+  workflow_dispatch:
+    inputs:
+      despliegue:
+        description: "Despliegue que pasará a ser el predeterminado"
+        required: true
+        type: string
+        default: produccion
+
+permissions:
+  contents: read
+
+# Dos promociones a la vez dejarían el endpoint en un estado que depende de cuál
+# terminó última. Aquí no se cancela la que va en curso, a diferencia del
+# reentrenamiento: una promoción a medias es peor que una repetida.
+concurrency:
+  group: promocion
+  cancel-in-progress: false
+
+env:
+  GRUPO: rg-tissue-mlops
+  WORKSPACE: mlw-tissue-mlops
+  ENDPOINT: tissue-falla-14d-lotes
+
+jobs:
+  # Se separa en dos trabajos a propósito. Todo lo que se puede comprobar sin
+  # autorización se comprueba antes de pedirla, para no despertar a nadie y
+  # que después resulte que el despliegue ni siquiera existía.
+  comprobar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - run: az extension add -n ml -y
+
+      - name: Comprobar que el despliegue existe y está sano
+        run: |
+          estado=$(az ml batch-deployment show \
+            --name "${{ inputs.despliegue }}" \
+            --endpoint-name "$ENDPOINT" \
+            --resource-group "$GRUPO" \
+            --workspace-name "$WORKSPACE" \
+            --query provisioning_state -o tsv)
+          echo "Estado del despliegue ${{ inputs.despliegue }}: $estado"
+          [ "$estado" = "Succeeded" ]
+
+      - name: Dejar a la vista qué atiende hoy
+        run: |
+          actual=$(az ml batch-endpoint show --name "$ENDPOINT" \
+            --resource-group "$GRUPO" --workspace-name "$WORKSPACE" \
+            --query defaults.deployment_name -o tsv)
+          echo "### Promoción pendiente de autorización" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Atiende hoy: \`$actual\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Pasaría a atender: \`${{ inputs.despliegue }}\`" >> $GITHUB_STEP_SUMMARY
+
+  promover:
+    needs: comprobar
+    runs-on: ubuntu-latest
+
+    # Aquí está el control. El environment `produccion` tiene revisores
+    # requeridos configurados en el repositorio, así que este trabajo no arranca:
+    # queda esperando a que alguien lo apruebe desde la ejecución. Si nadie lo
+    # hace, caduca y no pasa nada.
+    #
+    # La regla vive en la configuración del repositorio y no en este archivo, y
+    # eso es deliberado. Si estuviera aquí, cualquiera que pueda modificar el
+    # workflow podría quitarse a sí mismo el revisor en el mismo commit que
+    # despliega.
+    environment:
+      name: produccion
+      url: https://ml.azure.com
+
+    steps:
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - run: az extension add -n ml -y
+
+      # Promover es cambiar un puntero. No reconstruye la imagen ni vuelve a
+      # desplegar el modelo, que es justo lo que hace que la vuelta atrás tarde
+      # segundos: se ejecuta este mismo workflow con el otro despliegue.
+      - name: Cambiar el despliegue predeterminado
+        run: |
+          az ml batch-endpoint update --name "$ENDPOINT" \
+            --set defaults.deployment_name=${{ inputs.despliegue }} \
+            --resource-group "$GRUPO" --workspace-name "$WORKSPACE"
+
+      - name: Confirmar el cambio
+        run: |
+          actual=$(az ml batch-endpoint show --name "$ENDPOINT" \
+            --resource-group "$GRUPO" --workspace-name "$WORKSPACE" \
+            --query defaults.deployment_name -o tsv)
+          echo "Atiende ahora: $actual"
+          [ "$actual" = "${{ inputs.despliegue }}" ]
+          echo "### Promovido a \`$actual\`" >> $GITHUB_STEP_SUMMARY

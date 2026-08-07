@@ -43,3 +43,24 @@ El de lotes no reparte tráfico, pero sí admite varios despliegues bajo el mism
 endpoint con uno marcado como predeterminado. Liberar una versión nueva es
 cambiar cuál es el predeterminado, y volver atrás es cambiarlo de vuelta. Es
 menos granular y conserva lo esencial: la vuelta atrás no exige redesplegar.
+
+## Lo que se comprobó al intentarlo
+
+El cambio de despliegue predeterminado funciona y la vuelta atrás también, esta
+última mejor de lo que se esperaba: se probó sobre un endpoint que había quedado
+en estado `Failed`, y devolverlo al despliegue anterior lo restauró a `Succeeded`
+en un par de segundos, sin reconstruir imagen ni volver a subir nada.
+
+Convivir con un segundo despliegue no llegó a funcionar. Se registró una segunda
+versión del modelo y se creó un despliegue sobre ella; el plano de control lo dio
+por creado y correcto, pero el endpoint nunca lo reconoció. Se verificó mandando
+peticiones deliberadamente inválidas al endpoint, que distinguen un problema de
+enrutamiento de uno de contenido: al despliegue en servicio respondía 400, que es
+"te encontré y tu petición está mal", y al nuevo respondía 404, exactamente lo
+mismo que a un nombre inventado. Marcarlo como predeterminado dejaba el endpoint
+en `Failed`, que es coherente con lo anterior.
+
+Azure no expuso el motivo por ninguna vía: ni en el recurso, ni en el estado de
+la operación, ni en el registro de actividad. Queda anotado como observado y sin
+explicación, que es más útil que dejarlo fuera y dar a entender que la parte de
+convivencia de versiones quedó resuelta.
