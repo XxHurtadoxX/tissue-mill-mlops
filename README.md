@@ -2,6 +2,8 @@
 
 **Mantenimiento predictivo para una máquina de papel tissue, del dato crudo al modelo desplegado.**
 
+![Doce equipos monitoreados a diario, uno de ellos separándose del comportamiento normal](docs/img/portada.png)
+
 [![CI](https://github.com/XxHurtadoxX/tissue-mill-mlops/actions/workflows/ci.yml/badge.svg)](https://github.com/XxHurtadoxX/tissue-mill-mlops/actions/workflows/ci.yml)
 [![Datos diarios](https://github.com/XxHurtadoxX/tissue-mill-mlops/actions/workflows/daily-data.yml/badge.svg)](https://github.com/XxHurtadoxX/tissue-mill-mlops/actions/workflows/daily-data.yml)
 
@@ -63,6 +65,15 @@ historian, SAP PM, rutas de vibración
 ```
 
 Todo lo de Azure Machine Learning está declarado en YAML bajo [`aml/`](aml/), incluidos el pipeline de reentrenamiento y la compuerta que decide si el modelo nuevo merece reemplazar al actual. El endpoint es por lotes y no en línea, y esa decisión tiene su propio documento porque cambia el costo por un factor de 288: [docs/decision-tipo-de-endpoint.md](docs/decision-tipo-de-endpoint.md).
+
+### Stack
+
+| | |
+|---|---|
+| **Datos y modelo** | Python 3.11, pandas, NumPy, scikit-learn, MLflow |
+| **Azure Machine Learning** | Workspace y clúster declarados en YAML, data assets versionados (`uri_folder`, `uri_file`, `mltable`), AutoML como línea base, búsqueda bayesiana de hiperparámetros, pipeline de componentes reutilizables, registro de modelos y endpoint por lotes con script de puntuación y entorno propios |
+| **Automatización** | GitHub Actions para integración continua, generación diaria de datos, reentrenamiento al fusionar y promoción a producción sujeta a aprobación humana mediante environment con revisor requerido |
+| **Prácticas** | Arquitectura medallón, partición temporal sin fuga, evaluación a nivel de evento y no de fila, umbral derivado del costo, rama protegida con verificaciones obligatorias |
 
 ## El simulador de datos
 
