@@ -5,6 +5,8 @@
 [![CI](https://github.com/XxHurtadoxX/tissue-mill-mlops/actions/workflows/ci.yml/badge.svg)](https://github.com/XxHurtadoxX/tissue-mill-mlops/actions/workflows/ci.yml)
 [![Datos diarios](https://github.com/XxHurtadoxX/tissue-mill-mlops/actions/workflows/daily-data.yml/badge.svg)](https://github.com/XxHurtadoxX/tissue-mill-mlops/actions/workflows/daily-data.yml)
 
+Proyecto de portafolio de **[Daniel Hurtado](https://github.com/XxHurtadoxX)**, economista. Cubre el caso completo, desde generar unos datos de planta que se comporten como datos de planta hasta el sistema que entrena, evalúa y despliega el modelo solo sobre Azure Machine Learning, pasando por el encuadre económico que decide cuándo vale la pena alertar.
+
 ## El problema
 
 En una máquina de papel tissue la producción es una línea continua. Si un equipo se detiene, se detiene toda la máquina, y una bomba de vacío que falla un domingo a las dos de la mañana cuesta unas 18 horas de parada y más de 40 toneladas perdidas.
@@ -14,6 +16,8 @@ Las señales suelen estar ahí antes del evento. La corriente del motor llevaba 
 Un dato resume el tamaño del hueco: sobre 37 fallas en dos años y medio, **la ruta mensual de vibración que se usa hoy anticipa una**. No es que la norma esté mal. Es que una medición al mes no alcanza a atrapar una degradación que se desarrolla en cuatro semanas.
 
 ## Resultado
+
+![Comparación entre la ruta mensual de vibración y el modelo, medida sobre cinco meses de datos no vistos](docs/img/comparativa.svg)
 
 Medido sobre cinco meses que el modelo nunca vio y que no intervinieron en ninguna decisión de diseño:
 
@@ -119,5 +123,11 @@ Y convivir con dos despliegues bajo el mismo endpoint no llegó a funcionar. El 
 ## Datos
 
 Son **100% sintéticos**, generados por el simulador. No provienen de ninguna planta real ni contienen información confidencial. El caso está inspirado en la operación típica de una máquina tissue de fibra reciclada.
+
+## Autor
+
+**Daniel Hurtado** ([@XxHurtadoxX](https://github.com/XxHurtadoxX)), economista. El proyecto nace de una pregunta que se responde mejor con datos que con intuición: cuánto cuesta de verdad esperar a que un equipo falle, y a partir de qué punto conviene molestar a un técnico para que vaya a mirarlo.
+
+Si te sirve para tu propia planta o quieres discutir el enfoque, los issues están abiertos.
 
 Distribuido bajo licencia [MIT](LICENSE).

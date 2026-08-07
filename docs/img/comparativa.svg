@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" width="1200" height="820" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif">
+  <rect width="1200" height="820" fill="#f7f8fa"/>
+
+  <!-- Encabezado -->
+  <text x="60" y="72" font-size="38" font-weight="700" fill="#12233a">Anticipar la falla, no reaccionar a ella</text>
+  <text x="60" y="108" font-size="19" fill="#5a6b80">Mantenimiento predictivo de rotativos críticos en una máquina de papel tissue</text>
+  <text x="60" y="136" font-size="15" fill="#8593a5">Medido sobre cinco meses de datos que el modelo nunca vio</text>
+  <line x1="60" y1="160" x2="1140" y2="160" stroke="#dde3ea" stroke-width="2"/>
+
+  <!-- Columna izquierda: práctica actual -->
+  <rect x="60" y="192" width="510" height="290" rx="10" fill="#ffffff" stroke="#e3e8ee" stroke-width="2"/>
+  <rect x="60" y="192" width="510" height="6" rx="3" fill="#b3bcc7"/>
+  <text x="92" y="240" font-size="14" font-weight="700" fill="#8593a5" letter-spacing="1.4">PRÁCTICA ACTUAL</text>
+  <text x="92" y="270" font-size="21" font-weight="600" fill="#12233a">Ruta mensual de vibración</text>
+  <text x="92" y="298" font-size="15" fill="#5a6b80">Una medición portátil al mes, norma ISO 20816</text>
+
+  <text x="92" y="382" font-size="72" font-weight="700" fill="#98a3b0">0 de 5</text>
+  <text x="92" y="412" font-size="16" fill="#5a6b80">fallas con precursor anticipadas</text>
+
+  <text x="92" y="452" font-size="15" fill="#8593a5">Sobre el histórico completo: 1 de 37</text>
+
+  <!-- Columna derecha: modelo -->
+  <rect x="630" y="192" width="510" height="290" rx="10" fill="#ffffff" stroke="#c9dcef" stroke-width="2"/>
+  <rect x="630" y="192" width="510" height="6" rx="3" fill="#1d6fb8"/>
+  <text x="662" y="240" font-size="14" font-weight="700" fill="#1d6fb8" letter-spacing="1.4">MODELO</text>
+  <text x="662" y="270" font-size="21" font-weight="600" fill="#12233a">Puntuación diaria de los 12 equipos</text>
+  <text x="662" y="298" font-size="15" fill="#5a6b80">Historian, órdenes SAP PM y rutas, cruzados cada día</text>
+
+  <text x="662" y="382" font-size="72" font-weight="700" fill="#1d6fb8">4 de 5</text>
+  <text x="662" y="412" font-size="16" fill="#5a6b80">fallas con precursor anticipadas</text>
+
+  <text x="662" y="452" font-size="15" fill="#5a6b80">AUC 0.915  ·  5.5 días de anticipación mediana</text>
+
+  <!-- Nota sobre fallas silenciosas -->
+  <rect x="60" y="506" width="1080" height="54" rx="8" fill="#fdf6e7" stroke="#f0e0bb" stroke-width="1.5"/>
+  <text x="88" y="530" font-size="15" font-weight="600" fill="#7a5c14">Una de cada cuatro fallas ocurre sin dejar rastro en los sensores.</text>
+  <text x="88" y="551" font-size="14.5" fill="#8a6d24">Ninguna técnica puede anticiparlas, así que el desempeño se reporta contra las que sí tenían precursor. Contarlas todas juntas subvendería el sistema.</text>
+
+  <!-- Economía -->
+  <text x="60" y="616" font-size="15" font-weight="700" fill="#8593a5" letter-spacing="1.4">LO QUE ESTÁ EN JUEGO POR EVENTO</text>
+
+  <rect x="60" y="638" width="340" height="118" rx="10" fill="#ffffff" stroke="#e3e8ee" stroke-width="2"/>
+  <text x="88" y="674" font-size="15" fill="#5a6b80">Parada de emergencia</text>
+  <text x="88" y="716" font-size="34" font-weight="700" fill="#c0392b">18 h</text>
+  <text x="88" y="740" font-size="14" fill="#8593a5">domingo a las 2 a.m., más de 40 t perdidas</text>
+
+  <rect x="430" y="638" width="340" height="118" rx="10" fill="#ffffff" stroke="#e3e8ee" stroke-width="2"/>
+  <text x="458" y="674" font-size="15" fill="#5a6b80">Intervención programada</text>
+  <text x="458" y="716" font-size="34" font-weight="700" fill="#1e8449">1 a 3 h</text>
+  <text x="458" y="740" font-size="14" fill="#8593a5">en la parada semanal, con repuesto en bodega</text>
+
+  <rect x="800" y="638" width="340" height="118" rx="10" fill="#12233a"/>
+  <text x="828" y="674" font-size="15" fill="#9fb3c8">Costo de vigilar</text>
+  <text x="828" y="716" font-size="34" font-weight="700" fill="#ffffff">USD 240</text>
+  <text x="828" y="740" font-size="14" fill="#9fb3c8">al mes: 8 inspecciones de una hora</text>
+
+  <text x="60" y="794" font-size="16" fill="#12233a">
+    <tspan font-weight="700">Un solo evento evitado paga entre tres y ocho años de inspecciones.</tspan>
+    <tspan fill="#5a6b80"> Esa asimetría, y no el AUC, es lo que decide el umbral de alerta.</tspan>
+  </text>
+</svg>
