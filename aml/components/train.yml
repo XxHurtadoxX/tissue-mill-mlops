@@ -6,7 +6,7 @@ version: 1
 display_name: Entrenar el clasificador
 description: >
   Ajusta el modelo con entrenamiento y validación juntos, usando los
-  hiperparámetros que encontró la búsqueda de la fase anterior.
+  hiperparámetros que encontró la búsqueda.
 
 inputs:
   splits:

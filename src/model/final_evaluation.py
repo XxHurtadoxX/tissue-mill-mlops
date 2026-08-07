@@ -1,6 +1,6 @@
 """Evaluación única sobre el conjunto de prueba.
 
-Este conjunto se apartó en la primera fase y no se ha mirado desde entonces. No
+Este conjunto se apartó al partir los datos y no se ha mirado desde entonces. No
 se usó para elegir variables, ni algoritmo, ni hiperparámetros, ni umbral. Por
 eso su resultado es la única estimación no sesgada del proyecto, y por eso se
 abre una sola vez.
