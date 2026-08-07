@@ -5,7 +5,7 @@
 [![CI](https://github.com/XxHurtadoxX/tissue-mill-mlops/actions/workflows/ci.yml/badge.svg)](https://github.com/XxHurtadoxX/tissue-mill-mlops/actions/workflows/ci.yml)
 [![Datos diarios](https://github.com/XxHurtadoxX/tissue-mill-mlops/actions/workflows/daily-data.yml/badge.svg)](https://github.com/XxHurtadoxX/tissue-mill-mlops/actions/workflows/daily-data.yml)
 
-Proyecto de portafolio de **[Daniel Hurtado](https://github.com/XxHurtadoxX)**, economista. Cubre el caso completo, desde generar unos datos de planta que se comporten como datos de planta hasta el sistema que entrena, evalúa y despliega el modelo solo sobre Azure Machine Learning, pasando por el encuadre económico que decide cuándo vale la pena alertar.
+Proyecto de portafolio de **[Daniel Hurtado](https://github.com/XxHurtadoxX)**, Machine Learning Engineer. Cubre el caso completo, desde generar unos datos de planta que se comporten como datos de planta hasta el sistema que entrena, evalúa y despliega el modelo solo sobre Azure Machine Learning, pasando por el encuadre económico que decide cuándo vale la pena alertar.
 
 ## El problema
 
@@ -141,7 +141,11 @@ Son **100% sintéticos**, generados por el simulador. No provienen de ninguna pl
 
 ## Autor
 
-**Daniel Hurtado** ([@XxHurtadoxX](https://github.com/XxHurtadoxX)), economista. El proyecto nace de una pregunta que se responde mejor con datos que con intuición: cuánto cuesta de verdad esperar a que un equipo falle, y a partir de qué punto conviene molestar a un técnico para que vaya a mirarlo.
+**Daniel Hurtado** ([@XxHurtadoxX](https://github.com/XxHurtadoxX)) · Machine Learning Engineer
+
+Vengo de la economía, y eso decide cómo está construido este proyecto. El umbral que dispara una alerta no sale de maximizar F1. Sale de comparar lo que cuesta una hora de técnico contra lo que cuesta una hora de máquina parada, y de preguntarle a mantenimiento cuántas inspecciones puede atender en un mes.
+
+En un sistema como este la parte difícil casi nunca es el modelo. Es decidir qué se optimiza, contra qué se compara y cuándo conviene no hacer nada.
 
 Si te sirve para tu propia planta o quieres discutir el enfoque, los issues están abiertos.
 
